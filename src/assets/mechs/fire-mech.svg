@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Shadow -->
+  <ellipse cx="64" cy="120" rx="40" ry="6" fill="#000" opacity="0.3"/>
+  <!-- Legs -->
+  <polygon points="38,95 30,112 50,112 46,95" fill="#CC3600" opacity="0.9"/>
+  <polygon points="82,95 78,112 98,112 90,95" fill="#CC3600" opacity="0.9"/>
+  <!-- Body - angular trapezoid -->
+  <polygon points="40,52 32,98 96,98 88,52" fill="#FF4500"/>
+  <!-- Center seam -->
+  <line x1="64" y1="54" x2="64" y2="96" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <!-- Panel lines -->
+  <line x1="42" y1="62" x2="86" y2="62" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <line x1="38" y1="76" x2="90" y2="76" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <line x1="36" y1="90" x2="92" y2="90" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <!-- Rivets -->
+  <circle cx="46" cy="64" r="2" fill="#888" opacity="0.8"/>
+  <circle cx="82" cy="64" r="2" fill="#888" opacity="0.8"/>
+  <circle cx="42" cy="82" r="2" fill="#888" opacity="0.8"/>
+  <circle cx="86" cy="82" r="2" fill="#888" opacity="0.8"/>
+  <!-- Shoulder spikes -->
+  <polygon points="32,52 18,30 40,48" fill="#FF2200"/>
+  <polygon points="96,52 110,30 88,48" fill="#FF2200"/>
+  <!-- Shoulder highlights -->
+  <line x1="18" y1="30" x2="28" y2="44" stroke="#FFAA66" stroke-width="1.5" opacity="0.6"/>
+  <line x1="110" y1="30" x2="100" y2="44" stroke="#FFAA66" stroke-width="1.5" opacity="0.6"/>
+  <!-- Head - angular diamond -->
+  <polygon points="64,8 44,40 64,56 84,40" fill="#FF6B35"/>
+  <!-- Head highlight -->
+  <line x1="52" y1="14" x2="76" y2="14" stroke="#FFAA66" stroke-width="1.5" opacity="0.6"/>
+  <!-- Eyes - fire slits -->
+  <rect x="48" y="28" width="10" height="5" rx="1" fill="#FFDD44"/>
+  <rect x="70" y="28" width="10" height="5" rx="1" fill="#FFDD44"/>
+  <rect x="50" y="29" width="6" height="3" rx="1" fill="#FFF" opacity="0.9"/>
+  <rect x="72" y="29" width="6" height="3" rx="1" fill="#FFF" opacity="0.9"/>
+  <!-- Eye glow -->
+  <circle cx="53" cy="30" r="7" fill="#FFAA00" opacity="0.2"/>
+  <circle cx="75" cy="30" r="7" fill="#FFAA00" opacity="0.2"/>
+  <!-- Exhaust vents -->
+  <rect x="44" y="94" width="8" height="8" rx="2" fill="#333" opacity="0.9"/>
+  <rect x="76" y="94" width="8" height="8" rx="2" fill="#333" opacity="0.9"/>
+  <rect x="46" y="96" width="4" height="4" rx="1" fill="#FF2200" opacity="0.7"/>
+  <rect x="78" y="96" width="4" height="4" rx="1" fill="#FF2200" opacity="0.7"/>
+  <!-- Exhaust flames -->
+  <polygon points="46,102 48,110 50,102" fill="#FFAA66" opacity="0.4"/>
+  <polygon points="78,102 80,110 82,102" fill="#FFAA66" opacity="0.4"/>
+  <!-- Weapon arm (right) -->
+  <rect x="96" y="56" width="14" height="6" rx="2" fill="#CC3600"/>
+  <rect x="108" y="54" width="8" height="10" rx="1" fill="#FF4500"/>
+  <rect x="114" y="56" width="6" height="6" rx="1" fill="#FF6B35"/>
+  <!-- Body highlight -->
+  <line x1="42" y1="53" x2="86" y2="53" stroke="#FFAA66" stroke-width="1.5" opacity="0.6"/>
+  <!-- Outline -->
+  <polygon points="64,8 44,40 32,52 32,98 96,98 96,52 84,40 64,8" fill="none" stroke="#FF2200" stroke-width="2" opacity="0.8"/>
+</svg>

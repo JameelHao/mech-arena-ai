@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Shadow -->
+  <ellipse cx="64" cy="120" rx="40" ry="6" fill="#000" opacity="0.3"/>
+  <!-- Legs - spiky -->
+  <polygon points="34,96 28,112 38,106 44,112 50,96" fill="#CCAA00" opacity="0.9"/>
+  <polygon points="78,96 72,112 82,106 88,112 94,96" fill="#CCAA00" opacity="0.9"/>
+  <!-- Body - jagged polygon -->
+  <polygon points="38,50 28,68 36,62 24,96 104,96 92,62 100,68 90,50" fill="#FFD700"/>
+  <!-- Panel lines -->
+  <line x1="38" y1="58" x2="90" y2="58" stroke="#333300" stroke-width="0.8" opacity="0.3"/>
+  <line x1="34" y1="72" x2="94" y2="72" stroke="#333300" stroke-width="0.8" opacity="0.3"/>
+  <line x1="30" y1="86" x2="98" y2="86" stroke="#333300" stroke-width="0.8" opacity="0.3"/>
+  <!-- Rivets -->
+  <circle cx="44" cy="60" r="2" fill="#888" opacity="0.8"/>
+  <circle cx="84" cy="60" r="2" fill="#888" opacity="0.8"/>
+  <circle cx="40" cy="78" r="2" fill="#888" opacity="0.8"/>
+  <circle cx="88" cy="78" r="2" fill="#888" opacity="0.8"/>
+  <!-- Lightning bolt accent on torso -->
+  <polygon points="58,56 48,72 60,66 52,90 68,70 56,76 66,56" fill="#CCAA00" opacity="0.9"/>
+  <!-- Energy core (center chest) -->
+  <circle cx="64" cy="72" r="8" fill="#FFED4A" opacity="0.6"/>
+  <circle cx="64" cy="72" r="5" fill="#FFF" opacity="0.4"/>
+  <circle cx="64" cy="72" r="3" fill="#FFD700"/>
+  <!-- Head - spiky crown -->
+  <polygon points="64,4 52,22 46,10 38,38 90,38 82,10 76,22 64,4" fill="#FFED4A"/>
+  <!-- Head highlight -->
+  <line x1="58" y1="6" x2="70" y2="6" stroke="#FFF5AA" stroke-width="1.5" opacity="0.6"/>
+  <!-- Body highlight -->
+  <line x1="40" y1="51" x2="88" y2="51" stroke="#FFF5AA" stroke-width="1.5" opacity="0.6"/>
+  <!-- Eyes - electric glow -->
+  <circle cx="52" cy="26" r="7" fill="#FFFF00" opacity="0.25"/>
+  <circle cx="76" cy="26" r="7" fill="#FFFF00" opacity="0.25"/>
+  <circle cx="52" cy="26" r="5" fill="#FFF"/>
+  <circle cx="76" cy="26" r="5" fill="#FFF"/>
+  <circle cx="52" cy="26" r="3" fill="#FFFF00"/>
+  <circle cx="76" cy="26" r="3" fill="#FFFF00"/>
+  <!-- Exhaust vents -->
+  <rect x="44" y="90" width="8" height="8" rx="2" fill="#333" opacity="0.9"/>
+  <rect x="76" y="90" width="8" height="8" rx="2" fill="#333" opacity="0.9"/>
+  <rect x="46" y="92" width="4" height="4" rx="1" fill="#CCAA00" opacity="0.7"/>
+  <rect x="78" y="92" width="4" height="4" rx="1" fill="#CCAA00" opacity="0.7"/>
+  <!-- Exhaust sparks -->
+  <polygon points="46,98 48,106 50,98" fill="#FFF5AA" opacity="0.4"/>
+  <polygon points="78,98 80,106 82,98" fill="#FFF5AA" opacity="0.4"/>
+  <!-- Lightning antenna spikes -->
+  <line x1="38" y1="38" x2="30" y2="28" stroke="#FFD700" stroke-width="2" opacity="0.8"/>
+  <line x1="90" y1="38" x2="98" y2="28" stroke="#FFD700" stroke-width="2" opacity="0.8"/>
+  <circle cx="30" cy="28" r="2" fill="#FFFF00" opacity="0.6"/>
+  <circle cx="98" cy="28" r="2" fill="#FFFF00" opacity="0.6"/>
+  <!-- Outline -->
+  <polygon points="64,4 38,38 28,68 24,96 104,96 100,68 90,38 64,4" fill="none" stroke="#CCAA00" stroke-width="2" opacity="0.8"/>
+</svg>
