@@ -3,6 +3,7 @@
  */
 
 import Phaser from "phaser";
+import { callBattleAPI } from "../api/battleClient";
 import { type Mech, MechType, TurnPhase } from "../types/game";
 import { BattleManager } from "../utils/BattleManager";
 
@@ -60,7 +61,11 @@ const OPPONENT_MECH: Mech = {
 const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 const LOG_MAX_LINES = 5;
 const HP_TWEEN_DURATION = 500;
-const AI_THINK_DELAY = 1000;
+
+const PROMPT_STORAGE_KEY = "mechArena_battlePrompt";
+const PROMPT_MAX_LENGTH = 500;
+const PROMPT_PLACEHOLDER =
+  "Enter your mech's battle strategy... e.g. 'Be aggressive, use high-damage attacks when HP is high. Switch to defense when low.'";
 
 export class BattleScene extends Phaser.Scene {
   // Battle state
@@ -99,6 +104,10 @@ export class BattleScene extends Phaser.Scene {
   // Result overlay
   private resultOverlay?: Phaser.GameObjects.Container;
 
+  // Prompt UI (DOM elements)
+  private promptContainer?: HTMLDivElement;
+  private mechPrompt = "";
+
   constructor() {
     super({ key: "BattleScene" });
   }
@@ -114,8 +123,12 @@ export class BattleScene extends Phaser.Scene {
     this.displayedPlayerRatio = 1;
     this.isAnimating = false;
 
+    // Load saved prompt from localStorage
+    this.mechPrompt = localStorage.getItem(PROMPT_STORAGE_KEY) ?? "";
+
     const { width, height } = this.scale;
     this.buildUI(width, height);
+    this.createPromptUI();
 
     // Sync initial log
     const state = this.battleManager.getState();
@@ -426,6 +439,62 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
+  // --- Prompt UI (DOM overlay) ---
+
+  private createPromptUI(): void {
+    // Remove existing if rebuilding
+    if (this.promptContainer) {
+      this.promptContainer.remove();
+    }
+
+    const container = document.createElement("div");
+    container.style.cssText =
+      "position:fixed;bottom:8px;left:8px;z-index:100;display:flex;flex-direction:column;gap:4px;width:220px;";
+
+    const textarea = document.createElement("textarea");
+    textarea.maxLength = PROMPT_MAX_LENGTH;
+    textarea.placeholder = PROMPT_PLACEHOLDER;
+    textarea.value = this.mechPrompt;
+    textarea.style.cssText =
+      "width:100%;height:60px;background:#222;color:#0f8;border:1px solid #444;border-radius:6px;padding:6px;font-size:12px;resize:none;font-family:monospace;";
+
+    const row = document.createElement("div");
+    row.style.cssText =
+      "display:flex;justify-content:space-between;align-items:center;";
+
+    const counter = document.createElement("span");
+    counter.style.cssText = "color:#666;font-size:11px;font-family:monospace;";
+    counter.textContent = `${this.mechPrompt.length}/${PROMPT_MAX_LENGTH}`;
+
+    const saveBtn = document.createElement("button");
+    saveBtn.textContent = "Save";
+    saveBtn.style.cssText =
+      "background:#0f8;color:#000;border:none;border-radius:4px;padding:4px 12px;font-size:12px;font-weight:bold;cursor:pointer;font-family:monospace;";
+
+    textarea.addEventListener("input", () => {
+      this.mechPrompt = textarea.value;
+      counter.textContent = `${textarea.value.length}/${PROMPT_MAX_LENGTH}`;
+    });
+
+    saveBtn.addEventListener("click", () => {
+      localStorage.setItem(PROMPT_STORAGE_KEY, this.mechPrompt);
+      saveBtn.textContent = "Saved!";
+      saveBtn.style.background = "#0a5";
+      setTimeout(() => {
+        saveBtn.textContent = "Save";
+        saveBtn.style.background = "#0f8";
+      }, 1000);
+    });
+
+    row.appendChild(counter);
+    row.appendChild(saveBtn);
+    container.appendChild(textarea);
+    container.appendChild(row);
+
+    document.body.appendChild(container);
+    this.promptContainer = container;
+  }
+
   // --- Skill buttons (2x2 grid) ---
 
   private createSkillButtons(w: number, h: number): void {
@@ -652,12 +721,6 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => {
-      this.time.delayedCall(ms, () => resolve());
-    });
-  }
-
   // --- Turn execution ---
 
   private async onSkillSelected(index: number): Promise<void> {
@@ -669,84 +732,80 @@ export class BattleScene extends Phaser.Scene {
     this.setButtonsEnabled(false);
 
     const prevOpponentHp = state.opponent.hp;
-    const prevPlayerHp = state.player.hp;
     const prevLogLen = state.log.length;
 
-    // Execute full turn in state machine
-    const newState = this.battleManager.executeTurn(index);
-    const newLogs = newState.log.slice(prevLogLen);
-
-    // Split logs into player-attack and AI-attack phases
-    let aiLogStart = newLogs.length;
-    for (let i = 0; i < newLogs.length; i++) {
-      if (newLogs[i].includes(`${newState.opponent.name} used`)) {
-        aiLogStart = i;
-        break;
-      }
-    }
-    const playerLogs = newLogs.slice(0, aiLogStart);
-    const aiLogs = newLogs.slice(aiLogStart);
-
     // --- Phase 1: Player attack ---
-    this.setTurnIndicator(TurnPhase.PlayerTurn);
+    const afterPlayer = this.battleManager.executePlayerAttack(index);
+    const playerLogs = afterPlayer.log.slice(prevLogLen);
 
+    this.setTurnIndicator(TurnPhase.PlayerTurn);
     for (const msg of playerLogs) {
       this.addLogMessage(msg);
     }
 
     await this.playAttackAnimation(true);
 
-    const opponentDamaged = newState.opponent.hp < prevOpponentHp;
-    if (opponentDamaged) {
+    if (afterPlayer.opponent.hp < prevOpponentHp) {
       await this.playDamageFlash(true);
     }
 
     await this.animateHP(
       true,
-      newState.opponent.hp / newState.opponent.maxHp,
-      newState.opponent.hp,
-      newState.opponent.maxHp,
+      afterPlayer.opponent.hp / afterPlayer.opponent.maxHp,
+      afterPlayer.opponent.hp,
+      afterPlayer.opponent.maxHp,
     );
 
     // Check if opponent defeated
-    if (newState.winner === "player") {
-      for (const msg of aiLogs) {
-        this.addLogMessage(msg);
-      }
+    if (afterPlayer.winner === "player") {
       this.setTurnIndicator(TurnPhase.BattleOver);
       this.showResultScreen(true);
       return;
     }
 
-    // --- Phase 2: AI thinking ---
+    // --- Phase 2: AI thinking + API call ---
     this.setTurnIndicator(TurnPhase.AiThinking);
     this.showSpinner();
-    await this.delay(AI_THINK_DELAY);
+
+    let aiSkillIndex: number;
+    if (this.mechPrompt.trim()) {
+      const apiResult = await callBattleAPI(
+        this.mechPrompt,
+        this.battleManager.getState(),
+      );
+      aiSkillIndex = apiResult?.move ?? this.battleManager.getRandomAiSkill();
+    } else {
+      aiSkillIndex = this.battleManager.getRandomAiSkill();
+    }
+
     this.hideSpinner();
 
     // --- Phase 3: AI attack ---
-    this.setTurnIndicator(TurnPhase.AiTurn);
+    const prevPlayerHp = afterPlayer.player.hp;
+    const aiLogLen = this.battleManager.getState().log.length;
+    const afterAi = this.battleManager.executeAiAttack(aiSkillIndex);
+    const aiLogs = afterAi.log.slice(aiLogLen);
 
+    this.setTurnIndicator(TurnPhase.AiTurn);
     for (const msg of aiLogs) {
       this.addLogMessage(msg);
     }
 
     await this.playAttackAnimation(false);
 
-    const playerDamaged = newState.player.hp < prevPlayerHp;
-    if (playerDamaged) {
+    if (afterAi.player.hp < prevPlayerHp) {
       await this.playDamageFlash(false);
     }
 
     await this.animateHP(
       false,
-      newState.player.hp / newState.player.maxHp,
-      newState.player.hp,
-      newState.player.maxHp,
+      afterAi.player.hp / afterAi.player.maxHp,
+      afterAi.player.hp,
+      afterAi.player.maxHp,
     );
 
     // Check if player defeated
-    if (newState.winner === "opponent") {
+    if (afterAi.winner === "opponent") {
       this.setTurnIndicator(TurnPhase.BattleOver);
       this.showResultScreen(false);
       return;
