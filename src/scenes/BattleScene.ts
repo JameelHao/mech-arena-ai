@@ -201,8 +201,8 @@ export class BattleScene extends Phaser.Scene {
   private createOpponentArea(w: number, h: number): void {
     const spriteX = w * 0.65;
     const spriteY = 150;
-    const spriteW = Math.min(w * 0.2, 120);
-    const spriteH = Math.min(h * 0.22, 120);
+    const spriteW = Math.min(w * 0.4, 240);
+    const spriteH = Math.min(h * 0.44, 240);
 
     this.opponentMechSprite = createMechSprite(
       this,
@@ -268,8 +268,8 @@ export class BattleScene extends Phaser.Scene {
   private createPlayerArea(w: number, h: number): void {
     const spriteX = w * 0.25;
     const spriteY = 450;
-    const spriteW = Math.min(w * 0.22, 140);
-    const spriteH = Math.min(h * 0.25, 140);
+    const spriteW = Math.min(w * 0.44, 280);
+    const spriteH = Math.min(h * 0.5, 280);
 
     this.playerMechSprite = createMechSprite(
       this,
