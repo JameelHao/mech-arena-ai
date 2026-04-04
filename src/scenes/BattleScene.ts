@@ -1,8 +1,10 @@
 /**
- * BattleScene - Pokémon-style battle UI layout
+ * BattleScene - Pokémon-style battle UI connected to BattleManager
  */
 
 import Phaser from "phaser";
+import { type Mech, MechType, TurnPhase } from "../types/game";
+import { BattleManager } from "../utils/BattleManager";
 
 const COLORS = {
   background: 0x1a1a1a,
@@ -22,77 +24,157 @@ const COLORS = {
   defense: "#888888",
 } as const;
 
-const SKILLS = [
-  { name: "Fire Blast", type: "fire", color: COLORS.fire, dmg: 40 },
-  { name: "Water Cannon", type: "water", color: COLORS.water, dmg: 30 },
-  { name: "Thunder Shock", type: "electric", color: COLORS.electric, dmg: 25 },
-  { name: "Iron Defense", type: "defense", color: COLORS.defense, dmg: 0 },
-] as const;
+const SKILL_COLORS: Record<string, string> = {
+  fire: COLORS.fire,
+  water: COLORS.water,
+  electric: COLORS.electric,
+  defense: COLORS.defense,
+};
+
+const PLAYER_MECH: Mech = {
+  name: "Your Mech",
+  type: MechType.Fire,
+  hp: 100,
+  maxHp: 100,
+  skills: [
+    { name: "Fire Blast", type: MechType.Fire, damage: 40 },
+    { name: "Water Cannon", type: MechType.Water, damage: 30 },
+    { name: "Thunder Shock", type: MechType.Electric, damage: 25 },
+    { name: "Iron Defense", type: "defense", damage: 0 },
+  ],
+};
+
+const OPPONENT_MECH: Mech = {
+  name: "Enemy Mech",
+  type: MechType.Water,
+  hp: 100,
+  maxHp: 100,
+  skills: [
+    { name: "Water Cannon", type: MechType.Water, damage: 30 },
+    { name: "Fire Blast", type: MechType.Fire, damage: 40 },
+    { name: "Thunder Shock", type: MechType.Electric, damage: 25 },
+    { name: "Iron Defense", type: "defense", damage: 0 },
+  ],
+};
+
+const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+const LOG_MAX_LINES = 5;
+const HP_TWEEN_DURATION = 500;
+const AI_THINK_DELAY = 1000;
 
 export class BattleScene extends Phaser.Scene {
-  private opponentHP = 100;
-  private playerHP = 100;
+  // Battle state
+  private battleManager!: BattleManager;
+  private isAnimating = false;
+
+  // HP display
   private opponentHPBar!: Phaser.GameObjects.Graphics;
   private playerHPBar!: Phaser.GameObjects.Graphics;
   private opponentHPText!: Phaser.GameObjects.Text;
   private playerHPText!: Phaser.GameObjects.Text;
-  private battleLog!: Phaser.GameObjects.Text;
+  private displayedOpponentRatio = 1;
+  private displayedPlayerRatio = 1;
+  private opponentBarGeom = { x: 0, y: 0, w: 0, h: 0 };
+  private playerBarGeom = { x: 0, y: 0, w: 0, h: 0 };
+
+  // Sprites (for animation)
+  private playerSpriteContainer!: Phaser.GameObjects.Container;
+  private opponentSpriteContainer!: Phaser.GameObjects.Container;
+
+  // Battle log
+  private battleLogText!: Phaser.GameObjects.Text;
   private logMessages: string[] = [];
+
+  // Skill buttons
   private skillButtons: Phaser.GameObjects.Container[] = [];
-  private isAnimating = false;
+  private skillHitZones: Phaser.GameObjects.Zone[] = [];
+
+  // Turn indicator
+  private turnIndicator!: Phaser.GameObjects.Text;
+
+  // AI spinner
+  private spinnerText!: Phaser.GameObjects.Text;
+  private spinnerTimer?: Phaser.Time.TimerEvent;
+
+  // Result overlay
+  private resultOverlay?: Phaser.GameObjects.Container;
 
   constructor() {
     super({ key: "BattleScene" });
   }
 
   create(): void {
+    this.battleManager = new BattleManager();
+    this.battleManager.initBattle(
+      JSON.parse(JSON.stringify(PLAYER_MECH)),
+      JSON.parse(JSON.stringify(OPPONENT_MECH)),
+    );
+
+    this.displayedOpponentRatio = 1;
+    this.displayedPlayerRatio = 1;
+    this.isAnimating = false;
+
     const { width, height } = this.scale;
+    this.buildUI(width, height);
 
-    this.createOpponentArea(width, height);
-    this.createPlayerArea(width, height);
-    this.createBattleLog(width, height);
-    this.createSkillButtons(width, height);
-
-    this.addLogMessage("Battle Start!");
-    this.addLogMessage("Your mech is ready to fight!");
+    // Sync initial log
+    const state = this.battleManager.getState();
+    for (const msg of state.log) {
+      this.addLogMessage(msg);
+    }
+    this.setTurnIndicator(state.phase);
 
     this.scale.on("resize", this.handleResize, this);
+  }
+
+  private buildUI(w: number, h: number): void {
+    this.skillButtons = [];
+    this.skillHitZones = [];
+    this.createOpponentArea(w, h);
+    this.createPlayerArea(w, h);
+    this.createTurnIndicator(w, h);
+    this.createBattleLog(w, h);
+    this.createSkillButtons(w, h);
+    this.createSpinner(w, h);
   }
 
   // --- Opponent area (top) ---
 
   private createOpponentArea(w: number, h: number): void {
-    // Opponent mech sprite placeholder
     const spriteX = w * 0.65;
     const spriteY = h * 0.18;
     const spriteW = Math.min(w * 0.2, 120);
     const spriteH = Math.min(h * 0.22, 120);
 
+    this.opponentSpriteContainer = this.add.container(spriteX, spriteY);
+
     const opponentSprite = this.add.graphics();
     opponentSprite.fillStyle(0x555555);
     opponentSprite.fillRoundedRect(
-      spriteX - spriteW / 2,
-      spriteY - spriteH / 2,
+      -spriteW / 2,
+      -spriteH / 2,
       spriteW,
       spriteH,
       8,
     );
     opponentSprite.lineStyle(2, COLORS.accentHex, 0.6);
     opponentSprite.strokeRoundedRect(
-      spriteX - spriteW / 2,
-      spriteY - spriteH / 2,
+      -spriteW / 2,
+      -spriteH / 2,
       spriteW,
       spriteH,
       8,
     );
 
-    this.add
-      .text(spriteX, spriteY, "ENEMY\nMECH", {
+    const label = this.add
+      .text(0, 0, "ENEMY\nMECH", {
         fontSize: `${Math.max(12, Math.floor(w * 0.02))}px`,
         color: COLORS.text,
         align: "center",
       })
       .setOrigin(0.5);
+
+    this.opponentSpriteContainer.add([opponentSprite, label]);
 
     // Opponent info panel (top-left)
     const panelX = w * 0.03;
@@ -103,7 +185,7 @@ export class BattleScene extends Phaser.Scene {
     this.drawPanel(panelX, panelY, panelW, panelH);
 
     this.add
-      .text(panelX + 10, panelY + 6, "Opponent Mech  Lv.5", {
+      .text(panelX + 10, panelY + 6, "Enemy Mech  Lv.5", {
         fontSize: `${Math.max(11, Math.floor(w * 0.018))}px`,
         color: COLORS.text,
         fontStyle: "bold",
@@ -111,13 +193,15 @@ export class BattleScene extends Phaser.Scene {
       .setOrigin(0, 0);
 
     // HP bar
-    const barX = panelX + 10;
-    const barY = panelY + panelH * 0.5;
-    const barW = panelW - 20;
+    const barX = panelX + 10 + 24;
+    const barY = panelY + panelH * 0.5 - Math.max(8, panelH * 0.2) / 2;
+    const barW = panelW - 20 - 24;
     const barH = Math.max(8, panelH * 0.2);
 
+    this.opponentBarGeom = { x: barX, y: barY, w: barW, h: barH };
+
     this.add
-      .text(barX, barY - 2, "HP", {
+      .text(panelX + 10, panelY + panelH * 0.5 - 2, "HP", {
         fontSize: `${Math.max(10, Math.floor(w * 0.014))}px`,
         color: COLORS.accent,
         fontStyle: "bold",
@@ -127,15 +211,15 @@ export class BattleScene extends Phaser.Scene {
     this.opponentHPBar = this.add.graphics();
     this.drawHPBar(
       this.opponentHPBar,
-      barX + 24,
-      barY - barH / 2,
-      barW - 24,
+      barX,
+      barY,
+      barW,
       barH,
-      1,
+      this.displayedOpponentRatio,
     );
 
     this.opponentHPText = this.add
-      .text(barX + barW, barY + barH + 2, "100 / 100", {
+      .text(panelX + panelW - 10, barY + barH + 2, "100 / 100", {
         fontSize: `${Math.max(9, Math.floor(w * 0.013))}px`,
         color: "#aaaaaa",
       })
@@ -145,32 +229,33 @@ export class BattleScene extends Phaser.Scene {
   // --- Player area (bottom-left) ---
 
   private createPlayerArea(w: number, h: number): void {
-    // Player mech sprite placeholder
     const spriteX = w * 0.25;
     const spriteY = h * 0.6;
     const spriteW = Math.min(w * 0.22, 140);
     const spriteH = Math.min(h * 0.25, 140);
 
+    this.playerSpriteContainer = this.add.container(spriteX, spriteY);
+
     const playerSprite = this.add.graphics();
     playerSprite.fillStyle(0x446644);
     playerSprite.fillRoundedRect(
-      spriteX - spriteW / 2,
-      spriteY - spriteH / 2,
+      -spriteW / 2,
+      -spriteH / 2,
       spriteW,
       spriteH,
       8,
     );
     playerSprite.lineStyle(2, COLORS.accentHex, 0.8);
     playerSprite.strokeRoundedRect(
-      spriteX - spriteW / 2,
-      spriteY - spriteH / 2,
+      -spriteW / 2,
+      -spriteH / 2,
       spriteW,
       spriteH,
       8,
     );
 
-    this.add
-      .text(spriteX, spriteY, "YOUR\nMECH", {
+    const label = this.add
+      .text(0, 0, "YOUR\nMECH", {
         fontSize: `${Math.max(14, Math.floor(w * 0.022))}px`,
         color: COLORS.accent,
         align: "center",
@@ -178,7 +263,9 @@ export class BattleScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    // Player info panel (bottom-right, above skill buttons)
+    this.playerSpriteContainer.add([playerSprite, label]);
+
+    // Player info panel
     const panelW = w * 0.45;
     const panelH = h * 0.12;
     const panelX = w * 0.53;
@@ -195,13 +282,15 @@ export class BattleScene extends Phaser.Scene {
       .setOrigin(0, 0);
 
     // HP bar
-    const barX = panelX + 10;
-    const barY = panelY + panelH * 0.5;
-    const barW = panelW - 20;
+    const barX = panelX + 10 + 24;
+    const barY = panelY + panelH * 0.5 - Math.max(8, panelH * 0.2) / 2;
+    const barW = panelW - 20 - 24;
     const barH = Math.max(8, panelH * 0.2);
 
+    this.playerBarGeom = { x: barX, y: barY, w: barW, h: barH };
+
     this.add
-      .text(barX, barY - 2, "HP", {
+      .text(panelX + 10, panelY + panelH * 0.5 - 2, "HP", {
         fontSize: `${Math.max(10, Math.floor(w * 0.014))}px`,
         color: COLORS.accent,
         fontStyle: "bold",
@@ -211,27 +300,62 @@ export class BattleScene extends Phaser.Scene {
     this.playerHPBar = this.add.graphics();
     this.drawHPBar(
       this.playerHPBar,
-      barX + 24,
-      barY - barH / 2,
-      barW - 24,
+      barX,
+      barY,
+      barW,
       barH,
-      1,
+      this.displayedPlayerRatio,
     );
 
     this.playerHPText = this.add
-      .text(barX + barW, barY + barH + 2, "100 / 100", {
+      .text(panelX + panelW - 10, barY + barH + 2, "100 / 100", {
         fontSize: `${Math.max(9, Math.floor(w * 0.013))}px`,
         color: "#aaaaaa",
       })
       .setOrigin(1, 0);
   }
 
-  // --- Battle log (center) ---
+  // --- Turn indicator ---
+
+  private createTurnIndicator(w: number, h: number): void {
+    this.turnIndicator = this.add
+      .text(w * 0.5, h * 0.33, "", {
+        fontSize: `${Math.max(13, Math.floor(w * 0.02))}px`,
+        color: COLORS.accent,
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+  }
+
+  private setTurnIndicator(phase: TurnPhase): void {
+    switch (phase) {
+      case TurnPhase.PlayerTurn:
+        this.turnIndicator.setText("⚔ Your Turn");
+        this.turnIndicator.setColor(COLORS.accent);
+        break;
+      case TurnPhase.AiThinking:
+        this.turnIndicator.setText("AI Thinking...");
+        this.turnIndicator.setColor("#ffd700");
+        break;
+      case TurnPhase.AiTurn:
+        this.turnIndicator.setText("⚔ AI Turn");
+        this.turnIndicator.setColor("#ff6666");
+        break;
+      case TurnPhase.BattleOver:
+        this.turnIndicator.setText("Battle Over");
+        this.turnIndicator.setColor("#ffffff");
+        break;
+      default:
+        this.turnIndicator.setText("");
+    }
+  }
+
+  // --- Battle log ---
 
   private createBattleLog(w: number, h: number): void {
     const logX = w * 0.03;
-    const logY = h * 0.35;
-    const logW = w * 0.94;
+    const logY = h * 0.37;
+    const logW = w * 0.44;
     const logH = h * 0.12;
 
     const bg = this.add.graphics();
@@ -240,19 +364,74 @@ export class BattleScene extends Phaser.Scene {
     bg.lineStyle(1, COLORS.panelBorder);
     bg.strokeRoundedRect(logX, logY, logW, logH, 6);
 
-    this.battleLog = this.add
+    this.battleLogText = this.add
       .text(logX + 10, logY + 6, "", {
-        fontSize: `${Math.max(11, Math.floor(w * 0.016))}px`,
+        fontSize: `${Math.max(10, Math.floor(w * 0.014))}px`,
         color: COLORS.accent,
         wordWrap: { width: logW - 20 },
-        lineSpacing: 4,
+        lineSpacing: 3,
       })
       .setOrigin(0, 0);
+
+    // Mask to clip overflow
+    const mask = this.add.graphics();
+    mask.fillStyle(0xffffff);
+    mask.fillRect(logX, logY, logW, logH);
+    this.battleLogText.setMask(
+      new Phaser.Display.Masks.GeometryMask(this, mask),
+    );
   }
 
-  // --- Skill buttons (bottom-right, 2x2 grid) ---
+  private addLogMessage(msg: string): void {
+    this.logMessages.push(`> ${msg}`);
+    // Keep last N lines for auto-scroll
+    if (this.logMessages.length > LOG_MAX_LINES) {
+      this.logMessages.shift();
+    }
+    this.battleLogText.setText(this.logMessages.join("\n"));
+  }
+
+  // --- Spinner ---
+
+  private createSpinner(w: number, h: number): void {
+    this.spinnerText = this.add
+      .text(w * 0.5, h * 0.45, "", {
+        fontSize: `${Math.max(14, Math.floor(w * 0.022))}px`,
+        color: "#ffd700",
+      })
+      .setOrigin(0.5)
+      .setVisible(false);
+  }
+
+  private showSpinner(): void {
+    let i = 0;
+    this.spinnerText.setVisible(true);
+    this.spinnerTimer = this.time.addEvent({
+      delay: 80,
+      loop: true,
+      callback: () => {
+        this.spinnerText.setText(
+          `${SPINNER_FRAMES[i]} AI Thinking... ${SPINNER_FRAMES[i]}`,
+        );
+        i = (i + 1) % SPINNER_FRAMES.length;
+      },
+    });
+  }
+
+  private hideSpinner(): void {
+    this.spinnerText.setVisible(false);
+    if (this.spinnerTimer) {
+      this.spinnerTimer.destroy();
+      this.spinnerTimer = undefined;
+    }
+  }
+
+  // --- Skill buttons (2x2 grid) ---
 
   private createSkillButtons(w: number, h: number): void {
+    const state = this.battleManager.getState();
+    const skills = state.player.skills;
+
     const gridX = w * 0.5;
     const gridY = h * 0.66;
     const gridW = w * 0.48;
@@ -261,12 +440,13 @@ export class BattleScene extends Phaser.Scene {
     const btnW = (gridW - gap) / 2;
     const btnH = (gridH - gap) / 2;
 
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < skills.length; i++) {
       const col = i % 2;
       const row = Math.floor(i / 2);
       const x = gridX + col * (btnW + gap);
       const y = gridY + row * (btnH + gap);
-      const skill = SKILLS[i];
+      const skill = skills[i];
+      const skillColor = SKILL_COLORS[skill.type] || COLORS.defense;
 
       const container = this.add.container(x, y);
 
@@ -275,7 +455,7 @@ export class BattleScene extends Phaser.Scene {
       bg.fillRoundedRect(0, 0, btnW, btnH, 6);
       bg.lineStyle(
         2,
-        Phaser.Display.Color.HexStringToColor(skill.color).color,
+        Phaser.Display.Color.HexStringToColor(skillColor).color,
         0.8,
       );
       bg.strokeRoundedRect(0, 0, btnW, btnH, 6);
@@ -286,7 +466,7 @@ export class BattleScene extends Phaser.Scene {
       const nameText = this.add
         .text(btnW / 2, btnH * 0.38, skill.name, {
           fontSize: `${fontSize}px`,
-          color: skill.color,
+          color: skillColor,
           fontStyle: "bold",
           align: "center",
         })
@@ -296,8 +476,8 @@ export class BattleScene extends Phaser.Scene {
         .text(
           btnW / 2,
           btnH * 0.68,
-          skill.dmg > 0
-            ? `${skill.type.toUpperCase()} · ${skill.dmg} DMG`
+          skill.damage > 0
+            ? `${skill.type.toUpperCase()} · ${skill.damage} DMG`
             : "BUFF · DEF +50%",
           {
             fontSize: `${subFontSize}px`,
@@ -309,7 +489,6 @@ export class BattleScene extends Phaser.Scene {
 
       container.add([bg, nameText, infoText]);
 
-      // Interactive hit zone
       const hitZone = this.add
         .zone(x, y, btnW, btnH)
         .setOrigin(0)
@@ -321,7 +500,7 @@ export class BattleScene extends Phaser.Scene {
         bg.fillRoundedRect(0, 0, btnW, btnH, 6);
         bg.lineStyle(
           2,
-          Phaser.Display.Color.HexStringToColor(skill.color).color,
+          Phaser.Display.Color.HexStringToColor(skillColor).color,
           1,
         );
         bg.strokeRoundedRect(0, 0, btnW, btnH, 6);
@@ -333,7 +512,7 @@ export class BattleScene extends Phaser.Scene {
         bg.fillRoundedRect(0, 0, btnW, btnH, 6);
         bg.lineStyle(
           2,
-          Phaser.Display.Color.HexStringToColor(skill.color).color,
+          Phaser.Display.Color.HexStringToColor(skillColor).color,
           0.8,
         );
         bg.strokeRoundedRect(0, 0, btnW, btnH, 6);
@@ -344,10 +523,24 @@ export class BattleScene extends Phaser.Scene {
       });
 
       this.skillButtons.push(container);
+      this.skillHitZones.push(hitZone);
     }
   }
 
-  // --- Panel drawing ---
+  private setButtonsEnabled(enabled: boolean): void {
+    for (const zone of this.skillHitZones) {
+      if (enabled) {
+        zone.setInteractive({ useHandCursor: true });
+      } else {
+        zone.disableInteractive();
+      }
+    }
+    for (const container of this.skillButtons) {
+      container.setAlpha(enabled ? 1 : 0.5);
+    }
+  }
+
+  // --- Panel / HP drawing ---
 
   private drawPanel(x: number, y: number, w: number, h: number): void {
     const panel = this.add.graphics();
@@ -356,8 +549,6 @@ export class BattleScene extends Phaser.Scene {
     panel.lineStyle(1, COLORS.panelBorder);
     panel.strokeRoundedRect(x, y, w, h, 8);
   }
-
-  // --- HP bar drawing ---
 
   private drawHPBar(
     graphics: Phaser.GameObjects.Graphics,
@@ -368,105 +559,325 @@ export class BattleScene extends Phaser.Scene {
     ratio: number,
   ): void {
     graphics.clear();
-
-    // Background
     graphics.fillStyle(0x333333);
     graphics.fillRoundedRect(x, y, w, h, 3);
 
-    // Fill
     if (ratio > 0) {
       let color: number = COLORS.hpGreen;
       if (ratio < 0.25) color = COLORS.hpRed;
       else if (ratio < 0.5) color = COLORS.hpYellow;
 
       graphics.fillStyle(color);
-      graphics.fillRoundedRect(x, y, w * ratio, h, 3);
+      graphics.fillRoundedRect(x, y, w * Math.max(ratio, 0.01), h, 3);
     }
   }
 
-  // --- Update HP display ---
+  // --- Animations ---
 
-  private updateHP(
-    hpBar: Phaser.GameObjects.Graphics,
-    hpText: Phaser.GameObjects.Text,
-    current: number,
-    max: number,
-  ): void {
+  private animateHP(
+    isOpponent: boolean,
+    targetRatio: number,
+    newHp: number,
+    maxHp: number,
+  ): Promise<void> {
+    return new Promise((resolve) => {
+      const fromRatio = isOpponent
+        ? this.displayedOpponentRatio
+        : this.displayedPlayerRatio;
+      const hpBar = isOpponent ? this.opponentHPBar : this.playerHPBar;
+      const hpText = isOpponent ? this.opponentHPText : this.playerHPText;
+      const geom = isOpponent ? this.opponentBarGeom : this.playerBarGeom;
+      const fromHp = Math.round(fromRatio * maxHp);
+
+      const target = { ratio: fromRatio, hp: fromHp };
+
+      this.tweens.add({
+        targets: target,
+        ratio: targetRatio,
+        hp: newHp,
+        duration: HP_TWEEN_DURATION,
+        ease: "Power2",
+        onUpdate: () => {
+          this.drawHPBar(hpBar, geom.x, geom.y, geom.w, geom.h, target.ratio);
+          hpText.setText(`${Math.round(target.hp)} / ${maxHp}`);
+        },
+        onComplete: () => {
+          if (isOpponent) {
+            this.displayedOpponentRatio = targetRatio;
+          } else {
+            this.displayedPlayerRatio = targetRatio;
+          }
+          hpText.setText(`${newHp} / ${maxHp}`);
+          resolve();
+        },
+      });
+    });
+  }
+
+  private playAttackAnimation(isPlayer: boolean): Promise<void> {
+    return new Promise((resolve) => {
+      const sprite = isPlayer
+        ? this.playerSpriteContainer
+        : this.opponentSpriteContainer;
+      const moveX = isPlayer ? 30 : -30;
+
+      this.tweens.add({
+        targets: sprite,
+        x: sprite.x + moveX,
+        duration: 100,
+        yoyo: true,
+        ease: "Power1",
+        onComplete: () => resolve(),
+      });
+    });
+  }
+
+  private playDamageFlash(targetIsOpponent: boolean): Promise<void> {
+    return new Promise((resolve) => {
+      const sprite = targetIsOpponent
+        ? this.opponentSpriteContainer
+        : this.playerSpriteContainer;
+
+      this.tweens.add({
+        targets: sprite,
+        alpha: 0.2,
+        duration: 80,
+        yoyo: true,
+        repeat: 2,
+        onComplete: () => {
+          sprite.setAlpha(1);
+          resolve();
+        },
+      });
+    });
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => {
+      this.time.delayedCall(ms, () => resolve());
+    });
+  }
+
+  // --- Turn execution ---
+
+  private async onSkillSelected(index: number): Promise<void> {
+    if (this.isAnimating) return;
+    const state = this.battleManager.getState();
+    if (state.phase !== TurnPhase.PlayerTurn) return;
+
+    this.isAnimating = true;
+    this.setButtonsEnabled(false);
+
+    const prevOpponentHp = state.opponent.hp;
+    const prevPlayerHp = state.player.hp;
+    const prevLogLen = state.log.length;
+
+    // Execute full turn in state machine
+    const newState = this.battleManager.executeTurn(index);
+    const newLogs = newState.log.slice(prevLogLen);
+
+    // Split logs into player-attack and AI-attack phases
+    let aiLogStart = newLogs.length;
+    for (let i = 0; i < newLogs.length; i++) {
+      if (newLogs[i].includes(`${newState.opponent.name} used`)) {
+        aiLogStart = i;
+        break;
+      }
+    }
+    const playerLogs = newLogs.slice(0, aiLogStart);
+    const aiLogs = newLogs.slice(aiLogStart);
+
+    // --- Phase 1: Player attack ---
+    this.setTurnIndicator(TurnPhase.PlayerTurn);
+
+    for (const msg of playerLogs) {
+      this.addLogMessage(msg);
+    }
+
+    await this.playAttackAnimation(true);
+
+    const opponentDamaged = newState.opponent.hp < prevOpponentHp;
+    if (opponentDamaged) {
+      await this.playDamageFlash(true);
+    }
+
+    await this.animateHP(
+      true,
+      newState.opponent.hp / newState.opponent.maxHp,
+      newState.opponent.hp,
+      newState.opponent.maxHp,
+    );
+
+    // Check if opponent defeated
+    if (newState.winner === "player") {
+      for (const msg of aiLogs) {
+        this.addLogMessage(msg);
+      }
+      this.setTurnIndicator(TurnPhase.BattleOver);
+      this.showResultScreen(true);
+      return;
+    }
+
+    // --- Phase 2: AI thinking ---
+    this.setTurnIndicator(TurnPhase.AiThinking);
+    this.showSpinner();
+    await this.delay(AI_THINK_DELAY);
+    this.hideSpinner();
+
+    // --- Phase 3: AI attack ---
+    this.setTurnIndicator(TurnPhase.AiTurn);
+
+    for (const msg of aiLogs) {
+      this.addLogMessage(msg);
+    }
+
+    await this.playAttackAnimation(false);
+
+    const playerDamaged = newState.player.hp < prevPlayerHp;
+    if (playerDamaged) {
+      await this.playDamageFlash(false);
+    }
+
+    await this.animateHP(
+      false,
+      newState.player.hp / newState.player.maxHp,
+      newState.player.hp,
+      newState.player.maxHp,
+    );
+
+    // Check if player defeated
+    if (newState.winner === "opponent") {
+      this.setTurnIndicator(TurnPhase.BattleOver);
+      this.showResultScreen(false);
+      return;
+    }
+
+    // --- Back to player turn ---
+    this.setTurnIndicator(TurnPhase.PlayerTurn);
+    this.setButtonsEnabled(true);
+    this.isAnimating = false;
+  }
+
+  // --- Result screen ---
+
+  private showResultScreen(won: boolean): void {
     const { width: w, height: h } = this.scale;
 
-    // Determine if opponent or player bar by reference
-    const isOpponent = hpBar === this.opponentHPBar;
-    const panelX = isOpponent ? w * 0.03 : w * 0.53;
-    const panelW = isOpponent ? w * 0.42 : w * 0.45;
-    const panelH = h * 0.12;
-    const panelY = isOpponent ? h * 0.05 : h * 0.5;
+    this.resultOverlay = this.add.container(0, 0);
 
-    const barX = panelX + 10 + 24;
-    const barY = panelY + panelH * 0.5 - Math.max(8, panelH * 0.2) / 2;
-    const barW = panelW - 20 - 24;
-    const barH = Math.max(8, panelH * 0.2);
+    // Dark overlay
+    const bg = this.add.graphics();
+    bg.fillStyle(0x000000, 0.7);
+    bg.fillRect(0, 0, w, h);
+    this.resultOverlay.add(bg);
 
-    this.drawHPBar(hpBar, barX, barY, barW, barH, current / max);
-    hpText.setText(`${current} / ${max}`);
-  }
+    // Result text
+    const titleText = won ? "VICTORY!" : "DEFEAT...";
+    const titleColor = won ? "#00ff88" : "#ff4500";
+    const title = this.add
+      .text(w / 2, h * 0.35, titleText, {
+        fontSize: `${Math.max(32, Math.floor(w * 0.06))}px`,
+        color: titleColor,
+        fontStyle: "bold",
+        stroke: "#000000",
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5);
+    this.resultOverlay.add(title);
 
-  // --- Battle log ---
+    // Subtitle
+    const subtitle = this.add
+      .text(
+        w / 2,
+        h * 0.45,
+        won ? "Enemy mech destroyed!" : "Your mech was destroyed...",
+        {
+          fontSize: `${Math.max(14, Math.floor(w * 0.025))}px`,
+          color: "#cccccc",
+        },
+      )
+      .setOrigin(0.5);
+    this.resultOverlay.add(subtitle);
 
-  private addLogMessage(msg: string): void {
-    this.logMessages.push(`> ${msg}`);
-    if (this.logMessages.length > 3) {
-      this.logMessages.shift();
-    }
-    this.battleLog.setText(this.logMessages.join("\n"));
-  }
+    // Play Again button
+    const btnW = Math.min(w * 0.3, 200);
+    const btnH = 48;
+    const btnX = w / 2 - btnW / 2;
+    const btnY = h * 0.56;
 
-  // --- Skill selected handler ---
+    const btnBg = this.add.graphics();
+    btnBg.fillStyle(COLORS.accentHex, 1);
+    btnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
+    this.resultOverlay.add(btnBg);
 
-  private onSkillSelected(index: number): void {
-    if (this.isAnimating) return;
-    this.isAnimating = true;
+    const btnText = this.add
+      .text(w / 2, btnY + btnH / 2, "Play Again", {
+        fontSize: `${Math.max(16, Math.floor(w * 0.025))}px`,
+        color: "#000000",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+    this.resultOverlay.add(btnText);
 
-    const skill = SKILLS[index];
-    this.addLogMessage(`Your mech used ${skill.name}!`);
+    const btnZone = this.add
+      .zone(btnX, btnY, btnW, btnH)
+      .setOrigin(0)
+      .setInteractive({ useHandCursor: true });
 
-    // Apply damage to opponent
-    if (skill.dmg > 0) {
-      this.opponentHP = Math.max(0, this.opponentHP - skill.dmg);
-      this.updateHP(
-        this.opponentHPBar,
-        this.opponentHPText,
-        this.opponentHP,
-        100,
-      );
-    }
-
-    // Simple bot response after delay
-    this.time.delayedCall(800, () => {
-      if (this.opponentHP <= 0) {
-        this.addLogMessage("Enemy mech defeated! You win!");
-        this.isAnimating = false;
-        return;
-      }
-
-      // Bot picks random skill
-      const botSkillIndex = Phaser.Math.Between(0, 3);
-      const botSkill = SKILLS[botSkillIndex];
-      this.addLogMessage(`Enemy used ${botSkill.name}!`);
-
-      if (botSkill.dmg > 0) {
-        this.playerHP = Math.max(0, this.playerHP - botSkill.dmg);
-        this.updateHP(this.playerHPBar, this.playerHPText, this.playerHP, 100);
-      }
-
-      if (this.playerHP <= 0) {
-        this.time.delayedCall(400, () => {
-          this.addLogMessage("Your mech was defeated...");
-          this.isAnimating = false;
-        });
-      } else {
-        this.isAnimating = false;
-      }
+    btnZone.on("pointerover", () => {
+      btnBg.clear();
+      btnBg.fillStyle(0x00cc66, 1);
+      btnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
     });
+
+    btnZone.on("pointerout", () => {
+      btnBg.clear();
+      btnBg.fillStyle(COLORS.accentHex, 1);
+      btnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
+    });
+
+    btnZone.on("pointerdown", () => {
+      this.restartBattle();
+    });
+    this.resultOverlay.add(btnZone);
+
+    // Fade in
+    this.resultOverlay.setAlpha(0);
+    this.tweens.add({
+      targets: this.resultOverlay,
+      alpha: 1,
+      duration: 400,
+      ease: "Power2",
+    });
+  }
+
+  private restartBattle(): void {
+    this.hideSpinner();
+    if (this.resultOverlay) {
+      this.resultOverlay.destroy();
+      this.resultOverlay = undefined;
+    }
+    this.children.removeAll(true);
+    this.logMessages = [];
+    this.skillButtons = [];
+    this.skillHitZones = [];
+    this.isAnimating = false;
+    this.displayedOpponentRatio = 1;
+    this.displayedPlayerRatio = 1;
+
+    this.battleManager.initBattle(
+      JSON.parse(JSON.stringify(PLAYER_MECH)),
+      JSON.parse(JSON.stringify(OPPONENT_MECH)),
+    );
+
+    const { width, height } = this.scale;
+    this.buildUI(width, height);
+
+    const state = this.battleManager.getState();
+    for (const msg of state.log) {
+      this.addLogMessage(msg);
+    }
+    this.setTurnIndicator(state.phase);
   }
 
   // --- Responsive resize ---
@@ -475,23 +886,57 @@ export class BattleScene extends Phaser.Scene {
     const { width, height } = gameSize;
     this.cameras.main.setViewport(0, 0, width, height);
 
-    // Rebuild UI on resize
+    this.hideSpinner();
     this.children.removeAll(true);
     this.skillButtons = [];
+    this.skillHitZones = [];
+    const savedLog = [...this.logMessages];
     this.logMessages = [];
 
-    this.createOpponentArea(width, height);
-    this.createPlayerArea(width, height);
-    this.createBattleLog(width, height);
-    this.createSkillButtons(width, height);
+    this.buildUI(width, height);
 
-    this.updateHP(
+    // Restore state
+    const state = this.battleManager.getState();
+    this.displayedOpponentRatio = state.opponent.hp / state.opponent.maxHp;
+    this.displayedPlayerRatio = state.player.hp / state.player.maxHp;
+
+    this.drawHPBar(
       this.opponentHPBar,
-      this.opponentHPText,
-      this.opponentHP,
-      100,
+      this.opponentBarGeom.x,
+      this.opponentBarGeom.y,
+      this.opponentBarGeom.w,
+      this.opponentBarGeom.h,
+      this.displayedOpponentRatio,
     );
-    this.updateHP(this.playerHPBar, this.playerHPText, this.playerHP, 100);
-    this.addLogMessage("Battle in progress...");
+    this.opponentHPText.setText(
+      `${state.opponent.hp} / ${state.opponent.maxHp}`,
+    );
+
+    this.drawHPBar(
+      this.playerHPBar,
+      this.playerBarGeom.x,
+      this.playerBarGeom.y,
+      this.playerBarGeom.w,
+      this.playerBarGeom.h,
+      this.displayedPlayerRatio,
+    );
+    this.playerHPText.setText(`${state.player.hp} / ${state.player.maxHp}`);
+
+    // Restore log
+    for (const msg of savedLog) {
+      this.logMessages.push(msg);
+    }
+    if (this.logMessages.length > LOG_MAX_LINES) {
+      this.logMessages.splice(0, this.logMessages.length - LOG_MAX_LINES);
+    }
+    this.battleLogText.setText(this.logMessages.join("\n"));
+
+    this.setTurnIndicator(state.phase);
+
+    if (state.phase === TurnPhase.BattleOver) {
+      this.showResultScreen(state.winner === "player");
+    } else if (this.isAnimating) {
+      this.setButtonsEnabled(false);
+    }
   }
 }
