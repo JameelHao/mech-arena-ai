@@ -6,6 +6,17 @@
 import type Phaser from "phaser";
 import { MechType } from "../types/game";
 
+import electricMechSvg from "../assets/mechs/electric-mech.svg";
+// SVG asset imports (resolved by Vite as URLs)
+import fireMechSvg from "../assets/mechs/fire-mech.svg";
+import waterMechSvg from "../assets/mechs/water-mech.svg";
+
+const SVG_TEXTURE_KEYS: Record<string, { key: string; url: string }> = {
+  [MechType.Fire]: { key: "mech-fire", url: fireMechSvg },
+  [MechType.Water]: { key: "mech-water", url: waterMechSvg },
+  [MechType.Electric]: { key: "mech-electric", url: electricMechSvg },
+};
+
 const MECH_COLORS: Record<
   string,
   { primary: number; secondary: number; glow: number; highlight: number }
@@ -640,14 +651,34 @@ const EFFECT_FN: Record<
 
 export interface MechSprite {
   container: Phaser.GameObjects.Container;
-  graphics: Phaser.GameObjects.Graphics;
+  graphics: Phaser.GameObjects.Image | Phaser.GameObjects.Graphics;
   damageOverlay: Phaser.GameObjects.Graphics;
   idleTween: Phaser.Tweens.Tween;
   effectTimer?: Phaser.Time.TimerEvent;
 }
 
 /**
- * Create a programmatic mech sprite with shadow, effects, and idle animation.
+ * Preload SVG mech textures. Call in scene's preload() method.
+ */
+export function preloadMechSVGs(scene: Phaser.Scene): void {
+  for (const entry of Object.values(SVG_TEXTURE_KEYS)) {
+    if (!scene.textures.exists(entry.key)) {
+      scene.load.svg(entry.key, entry.url, { width: 128, height: 128 });
+    }
+  }
+}
+
+/**
+ * Check if SVG textures are loaded and available.
+ */
+function hasSVGTexture(scene: Phaser.Scene, type: MechType): boolean {
+  const entry = SVG_TEXTURE_KEYS[type];
+  return !!entry && scene.textures.exists(entry.key);
+}
+
+/**
+ * Create a mech sprite using SVG texture (preferred) or procedural fallback.
+ * Includes shadow, effects, and idle animation.
  */
 export function createMechSprite(
   scene: Phaser.Scene,
@@ -665,11 +696,21 @@ export function createMechSprite(
   shadow.fillEllipse(0, spriteH * 0.52, spriteW * 0.7, spriteH * 0.1);
   container.add(shadow);
 
-  // 2. Main mech graphics
-  const graphics = scene.add.graphics();
-  const drawFn = DRAW_FN[type] ?? drawFireMech;
-  drawFn(graphics, spriteW, spriteH);
-  container.add(graphics);
+  // 2. Main mech visual - SVG texture or procedural fallback
+  let graphicsObj: Phaser.GameObjects.Image | Phaser.GameObjects.Graphics;
+
+  if (hasSVGTexture(scene, type)) {
+    const entry = SVG_TEXTURE_KEYS[type];
+    const image = scene.add.image(0, 0, entry.key);
+    image.setDisplaySize(spriteW, spriteH);
+    graphicsObj = image;
+  } else {
+    const graphics = scene.add.graphics();
+    const drawFn = DRAW_FN[type] ?? drawFireMech;
+    drawFn(graphics, spriteW, spriteH);
+    graphicsObj = graphics;
+  }
+  container.add(graphicsObj);
 
   // 3. Red tint overlay for damage flash (initially invisible)
   const damageOverlay = scene.add.graphics();
@@ -726,7 +767,13 @@ export function createMechSprite(
     ease: "Sine.easeInOut",
   });
 
-  return { container, graphics, damageOverlay, idleTween, effectTimer };
+  return {
+    container,
+    graphics: graphicsObj,
+    damageOverlay,
+    idleTween,
+    effectTimer,
+  };
 }
 
 /** Play attack animation: lunge toward opponent then return */

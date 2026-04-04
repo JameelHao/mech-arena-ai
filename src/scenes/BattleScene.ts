@@ -12,6 +12,7 @@ import {
   createMechSprite,
   playMechAttack,
   playMechDamageFlash,
+  preloadMechSVGs,
 } from "../utils/MechGraphics";
 import {
   isOnline,
@@ -135,6 +136,10 @@ export class BattleScene extends Phaser.Scene {
 
   constructor() {
     super({ key: "BattleScene" });
+  }
+
+  preload(): void {
+    preloadMechSVGs(this);
   }
 
   create(): void {
