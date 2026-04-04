@@ -23,10 +23,10 @@ interface BattleResponse {
 }
 
 // Simple rate limiter: 1 req/sec per IP
-const rateLimitMap = new Map<string, number>();
+export const rateLimitMap = new Map<string, number>();
 const RATE_LIMIT_MS = 1000;
 
-function isRateLimited(ip: string): boolean {
+export function isRateLimited(ip: string): boolean {
   const now = Date.now();
   const last = rateLimitMap.get(ip);
   if (last && now - last < RATE_LIMIT_MS) {
@@ -50,7 +50,7 @@ function getRandomMove(): 0 | 1 | 2 | 3 {
   return Math.floor(Math.random() * 4) as 0 | 1 | 2 | 3;
 }
 
-function buildPrompt(body: BattleRequest): string {
+export function buildPrompt(body: BattleRequest): string {
   const { mechPrompt, gameState } = body;
   return `You are an AI controlling a battle mech. The player has given you this strategy:
 "${mechPrompt}"
@@ -73,7 +73,7 @@ SKILL: <index>
 REASON: <brief explanation>`;
 }
 
-function parseResponse(
+export function parseResponse(
   text: string,
 ): { move: 0 | 1 | 2 | 3; reasoning?: string } | null {
   const skillMatch = text.match(/SKILL:\s*([0-3])/);
