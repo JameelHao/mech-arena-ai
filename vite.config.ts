@@ -10,6 +10,8 @@ export default defineConfig({
   },
   build: {
     target: "ES2022",
+    // Prevent SVG inlining as data URIs — Phaser's SVG loader needs real URLs
+    assetsInlineLimit: 0,
   },
   plugins: [
     VitePWA({

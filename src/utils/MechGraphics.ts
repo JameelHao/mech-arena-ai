@@ -6,10 +6,10 @@
 import type Phaser from "phaser";
 import { MechType } from "../types/game";
 
-import electricMechSvg from "../assets/mechs/electric-mech.svg";
-// SVG asset imports (resolved by Vite as URLs)
-import fireMechSvg from "../assets/mechs/fire-mech.svg";
-import waterMechSvg from "../assets/mechs/water-mech.svg";
+import electricMechSvg from "../assets/mechs/electric-mech.svg?url";
+// SVG asset imports (resolved by Vite as URLs via ?url suffix)
+import fireMechSvg from "../assets/mechs/fire-mech.svg?url";
+import waterMechSvg from "../assets/mechs/water-mech.svg?url";
 
 const SVG_TEXTURE_KEYS: Record<string, { key: string; url: string }> = {
   [MechType.Fire]: { key: "mech-fire", url: fireMechSvg },
@@ -659,11 +659,24 @@ export interface MechSprite {
 
 /**
  * Preload SVG mech textures. Call in scene's preload() method.
+ * Handles both regular URLs and data URIs (Vite may inline SVGs in production).
+ * Falls back gracefully to programmatic graphics if SVG loading fails.
  */
 export function preloadMechSVGs(scene: Phaser.Scene): void {
-  for (const entry of Object.values(SVG_TEXTURE_KEYS)) {
-    if (!scene.textures.exists(entry.key)) {
+  for (const [type, entry] of Object.entries(SVG_TEXTURE_KEYS)) {
+    console.log(
+      `[MechGraphics] Loading SVG: ${entry.key} from ${entry.url.substring(0, 60)}...`,
+    );
+    if (scene.textures.exists(entry.key)) continue;
+
+    try {
+      // Phaser's SVG loader works with both regular URLs and data URIs
       scene.load.svg(entry.key, entry.url, { width: 128, height: 128 });
+    } catch (err) {
+      console.warn(
+        `[MechGraphics] Failed to queue SVG load for ${type}, will use programmatic fallback:`,
+        err,
+      );
     }
   }
 }
@@ -700,11 +713,23 @@ export function createMechSprite(
   let graphicsObj: Phaser.GameObjects.Image | Phaser.GameObjects.Graphics;
 
   if (hasSVGTexture(scene, type)) {
-    const entry = SVG_TEXTURE_KEYS[type];
-    const image = scene.add.image(0, 0, entry.key);
-    image.setDisplaySize(spriteW, spriteH);
-    graphicsObj = image;
+    try {
+      const entry = SVG_TEXTURE_KEYS[type];
+      const image = scene.add.image(0, 0, entry.key);
+      image.setDisplaySize(spriteW, spriteH);
+      graphicsObj = image;
+    } catch (err) {
+      console.warn(
+        `[MechGraphics] SVG texture failed for ${type}, falling back to programmatic:`,
+        err,
+      );
+      const graphics = scene.add.graphics();
+      const drawFn = DRAW_FN[type] ?? drawFireMech;
+      drawFn(graphics, spriteW, spriteH);
+      graphicsObj = graphics;
+    }
   } else {
+    console.log(`[MechGraphics] Using programmatic graphics for ${type}`);
     const graphics = scene.add.graphics();
     const drawFn = DRAW_FN[type] ?? drawFireMech;
     drawFn(graphics, spriteW, spriteH);
