@@ -12,26 +12,13 @@ import waterMechPng from "../assets/mechs/water-mech.png";
 // TODO: 等 Electric 机甲素材扣图完成后添加
 // import electricMechPng from "../assets/mechs/electric-mech.png";
 
-// 临时：Electric 仍用 SVG
-import electricMechSvgRaw from "../assets/mechs/electric-mech.svg?raw";
-
-/** Convert SVG string to base64 data URI */
-function svgToDataUri(svgString: string): string {
-  const base64 = btoa(unescape(encodeURIComponent(svgString)));
-  return `data:image/svg+xml;base64,${base64}`;
-}
-
 const MECH_TEXTURE_KEYS: Record<
   string,
-  { key: string; url: string; type: "png" | "svg" }
+  { key: string; url: string; type: "png" } | null
 > = {
   [MechType.Fire]: { key: "mech-fire", url: fireMechPng, type: "png" },
   [MechType.Water]: { key: "mech-water", url: waterMechPng, type: "png" },
-  [MechType.Electric]: {
-    key: "mech-electric",
-    url: svgToDataUri(electricMechSvgRaw),
-    type: "svg",
-  },
+  [MechType.Electric]: null, // 暂时用程序化回退，等素材
 };
 
 const MECH_COLORS: Record<
@@ -681,21 +668,18 @@ export interface MechSprite {
  */
 export function preloadMechSVGs(scene: Phaser.Scene): void {
   for (const [type, entry] of Object.entries(MECH_TEXTURE_KEYS)) {
-    console.log(
-      `[MechGraphics] Loading ${entry.type.toUpperCase()}: ${entry.key}`,
-    );
+    if (!entry) {
+      console.log(
+        `[MechGraphics] ${type}: no texture, will use programmatic fallback`,
+      );
+      continue;
+    }
+    console.log(`[MechGraphics] Loading PNG: ${entry.key}`);
     if (scene.textures.exists(entry.key)) continue;
 
     try {
-      if (entry.type === "png") {
-        // Load PNG image directly
-        scene.load.image(entry.key, entry.url);
-        console.log(`[MechGraphics] Queued PNG load: ${entry.key}`);
-      } else {
-        // Load SVG with base64 data URI
-        scene.load.svg(entry.key, entry.url, { width: 128, height: 128 });
-        console.log(`[MechGraphics] Queued SVG load: ${entry.key}`);
-      }
+      scene.load.image(entry.key, entry.url);
+      console.log(`[MechGraphics] Queued PNG load: ${entry.key}`);
     } catch (err) {
       console.warn(
         `[MechGraphics] Failed to queue load for ${type}, will use programmatic fallback:`,
@@ -736,9 +720,9 @@ export function createMechSprite(
   // 2. Main mech visual - SVG texture or procedural fallback
   let graphicsObj: Phaser.GameObjects.Image | Phaser.GameObjects.Graphics;
 
-  if (hasSVGTexture(scene, type)) {
+  const entry = MECH_TEXTURE_KEYS[type];
+  if (entry && hasSVGTexture(scene, type)) {
     try {
-      const entry = MECH_TEXTURE_KEYS[type];
       const image = scene.add.image(0, 0, entry.key);
       image.setDisplaySize(spriteW, spriteH);
       graphicsObj = image;
