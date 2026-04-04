@@ -5,7 +5,13 @@
 import Phaser from "phaser";
 import { callBattleAPI } from "../api/battleClient";
 import { type Mech, MechType, TurnPhase } from "../types/game";
+import type { BattleRecord } from "../types/storage";
 import { BattleManager } from "../utils/BattleManager";
+import {
+  loadMechPrompt,
+  saveBattleHistory,
+  saveMechPrompt,
+} from "../utils/storage";
 
 const COLORS = {
   background: 0x1a1a1a,
@@ -62,7 +68,6 @@ const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", 
 const LOG_MAX_LINES = 5;
 const HP_TWEEN_DURATION = 500;
 
-const PROMPT_STORAGE_KEY = "mechArena_battlePrompt";
 const PROMPT_MAX_LENGTH = 500;
 const PROMPT_PLACEHOLDER =
   "Enter your mech's battle strategy... e.g. 'Be aggressive, use high-damage attacks when HP is high. Switch to defense when low.'";
@@ -123,8 +128,8 @@ export class BattleScene extends Phaser.Scene {
     this.displayedPlayerRatio = 1;
     this.isAnimating = false;
 
-    // Load saved prompt from localStorage
-    this.mechPrompt = localStorage.getItem(PROMPT_STORAGE_KEY) ?? "";
+    // Load saved prompt
+    this.mechPrompt = loadMechPrompt();
 
     const { width, height } = this.scale;
     this.buildUI(width, height);
@@ -149,6 +154,7 @@ export class BattleScene extends Phaser.Scene {
     this.createBattleLog(w, h);
     this.createSkillButtons(w, h);
     this.createSpinner(w, h);
+    this.createHistoryButton(w, h);
   }
 
   // --- Opponent area (top) ---
@@ -477,7 +483,7 @@ export class BattleScene extends Phaser.Scene {
     });
 
     saveBtn.addEventListener("click", () => {
-      localStorage.setItem(PROMPT_STORAGE_KEY, this.mechPrompt);
+      saveMechPrompt(this.mechPrompt);
       saveBtn.textContent = "Saved!";
       saveBtn.style.background = "#0a5";
       setTimeout(() => {
@@ -817,9 +823,80 @@ export class BattleScene extends Phaser.Scene {
     this.isAnimating = false;
   }
 
+  // --- History button ---
+
+  private createHistoryButton(w: number, h: number): void {
+    const btnW = Math.min(w * 0.15, 100);
+    const btnH = 28;
+    const btnX = w - btnW - w * 0.03;
+    const btnY = h * 0.03;
+
+    const bg = this.add.graphics();
+    bg.fillStyle(COLORS.buttonBg);
+    bg.fillRoundedRect(btnX, btnY, btnW, btnH, 6);
+    bg.lineStyle(1, COLORS.panelBorder);
+    bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 6);
+
+    this.add
+      .text(btnX + btnW / 2, btnY + btnH / 2, "History", {
+        fontSize: `${Math.max(11, Math.floor(w * 0.016))}px`,
+        color: COLORS.accent,
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+
+    const zone = this.add
+      .zone(btnX, btnY, btnW, btnH)
+      .setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+
+    zone.on("pointerover", () => {
+      bg.clear();
+      bg.fillStyle(COLORS.buttonHover);
+      bg.fillRoundedRect(btnX, btnY, btnW, btnH, 6);
+      bg.lineStyle(1, COLORS.accentHex);
+      bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 6);
+    });
+
+    zone.on("pointerout", () => {
+      bg.clear();
+      bg.fillStyle(COLORS.buttonBg);
+      bg.fillRoundedRect(btnX, btnY, btnW, btnH, 6);
+      bg.lineStyle(1, COLORS.panelBorder);
+      bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 6);
+    });
+
+    zone.on("pointerdown", () => {
+      this.scale.off("resize", this.handleResize, this);
+      if (this.promptContainer) {
+        this.promptContainer.remove();
+        this.promptContainer = undefined;
+      }
+      this.scene.start("HistoryScene");
+    });
+  }
+
+  // --- Save battle record ---
+
+  private saveBattleRecord(won: boolean): void {
+    const state = this.battleManager.getState();
+    const record: BattleRecord = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: Date.now(),
+      playerMechType: PLAYER_MECH.type,
+      opponentMechType: OPPONENT_MECH.type,
+      result: won ? "win" : "loss",
+      turns: state.turnCount,
+      playerHpLeft: state.player.hp,
+      opponentHpLeft: state.opponent.hp,
+    };
+    saveBattleHistory(record);
+  }
+
   // --- Result screen ---
 
   private showResultScreen(won: boolean): void {
+    this.saveBattleRecord(won);
     const { width: w, height: h } = this.scale;
 
     this.resultOverlay = this.add.container(0, 0);
