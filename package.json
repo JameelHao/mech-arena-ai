@@ -1,0 +1,27 @@
+{
+  "name": "mech-arena-ai",
+  "version": "0.1.0",
+  "description": "AI-powered mech battle game with natural language prompts",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "typecheck": "tsc --noEmit",
+    "test": "echo 'No tests yet' && exit 0"
+  },
+  "dependencies": {
+    "phaser": "^3.80.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
