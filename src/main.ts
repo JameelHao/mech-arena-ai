@@ -3,6 +3,7 @@
  */
 
 import { BattleScene } from "@/scenes/BattleScene";
+import { HistoryScene } from "@/scenes/HistoryScene";
 import Phaser from "phaser";
 
 const config: Phaser.Types.Core.GameConfig = {
@@ -16,7 +17,7 @@ const config: Phaser.Types.Core.GameConfig = {
     min: { width: 320, height: 240 },
     max: { width: 1920, height: 1080 },
   },
-  scene: [BattleScene],
+  scene: [BattleScene, HistoryScene],
 };
 
 new Phaser.Game(config);
