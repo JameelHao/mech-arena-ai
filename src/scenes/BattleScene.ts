@@ -8,6 +8,13 @@ import { type Mech, MechType, TurnPhase } from "../types/game";
 import type { BattleRecord } from "../types/storage";
 import { BattleManager } from "../utils/BattleManager";
 import {
+  isOnline,
+  onOnlineChange,
+  onUpdateAvailable,
+  shouldShowInstallPrompt,
+  triggerInstallPrompt,
+} from "../utils/pwa";
+import {
   loadMechPrompt,
   saveBattleHistory,
   saveMechPrompt,
@@ -113,6 +120,13 @@ export class BattleScene extends Phaser.Scene {
   private promptContainer?: HTMLDivElement;
   private mechPrompt = "";
 
+  // PWA banners (DOM elements)
+  private offlineBanner?: HTMLDivElement;
+  private updateBanner?: HTMLDivElement;
+  private installBanner?: HTMLDivElement;
+  private onlineCleanup?: () => void;
+  private updateSWFn?: () => void;
+
   constructor() {
     super({ key: "BattleScene" });
   }
@@ -134,6 +148,7 @@ export class BattleScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.buildUI(width, height);
     this.createPromptUI();
+    this.initPWABanners();
 
     // Sync initial log
     const state = this.battleManager.getState();
@@ -501,6 +516,118 @@ export class BattleScene extends Phaser.Scene {
     this.promptContainer = container;
   }
 
+  // --- PWA banners ---
+
+  private initPWABanners(): void {
+    // Offline banner
+    this.onlineCleanup = onOnlineChange((online) => {
+      if (!online) {
+        this.showOfflineBanner();
+      } else {
+        this.removeOfflineBanner();
+      }
+    });
+    if (!isOnline()) this.showOfflineBanner();
+
+    // Update available banner
+    onUpdateAvailable((updateSW) => {
+      this.updateSWFn = updateSW;
+      this.showUpdateBanner();
+    });
+
+    // Install prompt (3rd visit)
+    if (shouldShowInstallPrompt()) {
+      this.showInstallBanner();
+    }
+  }
+
+  private showOfflineBanner(): void {
+    if (this.offlineBanner) return;
+    const banner = document.createElement("div");
+    banner.style.cssText =
+      "position:fixed;top:0;left:0;right:0;background:#ff4500;color:#fff;text-align:center;padding:6px 12px;font-size:13px;font-family:monospace;z-index:200;";
+    banner.textContent = "⚡ Offline — LLM disabled, using Bot moves";
+    document.body.appendChild(banner);
+    this.offlineBanner = banner;
+  }
+
+  private removeOfflineBanner(): void {
+    if (this.offlineBanner) {
+      this.offlineBanner.remove();
+      this.offlineBanner = undefined;
+    }
+  }
+
+  private showUpdateBanner(): void {
+    if (this.updateBanner) return;
+    const banner = document.createElement("div");
+    banner.style.cssText =
+      "position:fixed;top:0;left:0;right:0;background:#1e90ff;color:#fff;text-align:center;padding:6px 12px;font-size:13px;font-family:monospace;z-index:201;display:flex;justify-content:center;align-items:center;gap:12px;";
+    const text = document.createElement("span");
+    text.textContent = "Update available!";
+    const btn = document.createElement("button");
+    btn.textContent = "Refresh";
+    btn.style.cssText =
+      "background:#fff;color:#1e90ff;border:none;border-radius:4px;padding:3px 10px;font-size:12px;font-weight:bold;cursor:pointer;font-family:monospace;";
+    btn.addEventListener("click", () => {
+      this.updateSWFn?.();
+    });
+    const dismiss = document.createElement("button");
+    dismiss.textContent = "✕";
+    dismiss.style.cssText =
+      "background:none;color:#fff;border:none;font-size:16px;cursor:pointer;padding:0 4px;";
+    dismiss.addEventListener("click", () => {
+      this.updateBanner?.remove();
+      this.updateBanner = undefined;
+    });
+    banner.appendChild(text);
+    banner.appendChild(btn);
+    banner.appendChild(dismiss);
+    document.body.appendChild(banner);
+    this.updateBanner = banner;
+  }
+
+  private showInstallBanner(): void {
+    if (this.installBanner) return;
+    const banner = document.createElement("div");
+    banner.style.cssText =
+      "position:fixed;bottom:80px;left:8px;background:#2a2a2a;color:#0f8;border:1px solid #444;border-radius:8px;padding:10px 14px;font-size:13px;font-family:monospace;z-index:200;display:flex;align-items:center;gap:10px;max-width:280px;";
+    const text = document.createElement("span");
+    text.textContent = "Install Mech Arena AI?";
+    const btn = document.createElement("button");
+    btn.textContent = "Install";
+    btn.style.cssText =
+      "background:#0f8;color:#000;border:none;border-radius:4px;padding:4px 12px;font-size:12px;font-weight:bold;cursor:pointer;font-family:monospace;";
+    btn.addEventListener("click", async () => {
+      await triggerInstallPrompt();
+      this.installBanner?.remove();
+      this.installBanner = undefined;
+    });
+    const dismiss = document.createElement("button");
+    dismiss.textContent = "✕";
+    dismiss.style.cssText =
+      "background:none;color:#666;border:none;font-size:16px;cursor:pointer;padding:0 4px;";
+    dismiss.addEventListener("click", () => {
+      this.installBanner?.remove();
+      this.installBanner = undefined;
+    });
+    banner.appendChild(text);
+    banner.appendChild(btn);
+    banner.appendChild(dismiss);
+    document.body.appendChild(banner);
+    this.installBanner = banner;
+  }
+
+  private cleanupPWABanners(): void {
+    this.onlineCleanup?.();
+    this.offlineBanner?.remove();
+    this.updateBanner?.remove();
+    this.installBanner?.remove();
+    this.offlineBanner = undefined;
+    this.updateBanner = undefined;
+    this.installBanner = undefined;
+  }
+
   // --- Skill buttons (2x2 grid) ---
 
   private createSkillButtons(w: number, h: number): void {
@@ -774,7 +901,7 @@ export class BattleScene extends Phaser.Scene {
     this.showSpinner();
 
     let aiSkillIndex: number;
-    if (this.mechPrompt.trim()) {
+    if (this.mechPrompt.trim() && isOnline()) {
       const apiResult = await callBattleAPI(
         this.mechPrompt,
         this.battleManager.getState(),
@@ -872,6 +999,7 @@ export class BattleScene extends Phaser.Scene {
         this.promptContainer.remove();
         this.promptContainer = undefined;
       }
+      this.cleanupPWABanners();
       this.scene.start("HistoryScene");
     });
   }

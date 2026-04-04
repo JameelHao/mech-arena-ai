@@ -4,6 +4,7 @@
 
 import { BattleScene } from "@/scenes/BattleScene";
 import { HistoryScene } from "@/scenes/HistoryScene";
+import { registerSW } from "@/utils/pwa";
 import Phaser from "phaser";
 
 const config: Phaser.Types.Core.GameConfig = {
@@ -21,3 +22,4 @@ const config: Phaser.Types.Core.GameConfig = {
 };
 
 new Phaser.Game(config);
+registerSW();
