@@ -1,6 +1,12 @@
 /// <reference types="vite/client" />
 /// <reference types="vite-plugin-pwa/client" />
 
+// SVG raw string imports
+declare module "*.svg?raw" {
+  const content: string;
+  export default content;
+}
+
 declare module "virtual:pwa-register" {
   interface RegisterSWOptions {
     immediate?: boolean;
