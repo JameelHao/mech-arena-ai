@@ -6,15 +6,14 @@
 import type Phaser from "phaser";
 import { MechType } from "../types/game";
 
-// PNG imports for mech sprites (扣图后的高质量素材)
+// PNG imports for mech sprites (扣图后的高质量素材，256x256 统一尺寸)
 import fireMechPng from "../assets/mechs/fire-mech.png";
-// TODO: 等其他机甲素材扣图完成后添加
-// import waterMechPng from "../assets/mechs/water-mech.png";
+import waterMechPng from "../assets/mechs/water-mech.png";
+// TODO: 等 Electric 机甲素材扣图完成后添加
 // import electricMechPng from "../assets/mechs/electric-mech.png";
 
-// 临时：Water 和 Electric 仍用 SVG
+// 临时：Electric 仍用 SVG
 import electricMechSvgRaw from "../assets/mechs/electric-mech.svg?raw";
-import waterMechSvgRaw from "../assets/mechs/water-mech.svg?raw";
 
 /** Convert SVG string to base64 data URI */
 function svgToDataUri(svgString: string): string {
@@ -27,11 +26,7 @@ const MECH_TEXTURE_KEYS: Record<
   { key: string; url: string; type: "png" | "svg" }
 > = {
   [MechType.Fire]: { key: "mech-fire", url: fireMechPng, type: "png" },
-  [MechType.Water]: {
-    key: "mech-water",
-    url: svgToDataUri(waterMechSvgRaw),
-    type: "svg",
-  },
+  [MechType.Water]: { key: "mech-water", url: waterMechPng, type: "png" },
   [MechType.Electric]: {
     key: "mech-electric",
     url: svgToDataUri(electricMechSvgRaw),
