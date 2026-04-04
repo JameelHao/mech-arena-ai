@@ -6,27 +6,36 @@
 import type Phaser from "phaser";
 import { MechType } from "../types/game";
 
-// SVG imports as raw strings for base64 data URI conversion (most reliable for Phaser)
+// PNG imports for mech sprites (扣图后的高质量素材)
+import fireMechPng from "../assets/mechs/fire-mech.png";
+// TODO: 等其他机甲素材扣图完成后添加
+// import waterMechPng from "../assets/mechs/water-mech.png";
+// import electricMechPng from "../assets/mechs/electric-mech.png";
+
+// 临时：Water 和 Electric 仍用 SVG
 import electricMechSvgRaw from "../assets/mechs/electric-mech.svg?raw";
-import fireMechSvgRaw from "../assets/mechs/fire-mech.svg?raw";
 import waterMechSvgRaw from "../assets/mechs/water-mech.svg?raw";
 
 /** Convert SVG string to base64 data URI */
 function svgToDataUri(svgString: string): string {
-  // Encode as base64 for reliable cross-browser support
   const base64 = btoa(unescape(encodeURIComponent(svgString)));
   return `data:image/svg+xml;base64,${base64}`;
 }
 
-const SVG_TEXTURE_KEYS: Record<string, { key: string; dataUri: string }> = {
-  [MechType.Fire]: { key: "mech-fire", dataUri: svgToDataUri(fireMechSvgRaw) },
+const MECH_TEXTURE_KEYS: Record<
+  string,
+  { key: string; url: string; type: "png" | "svg" }
+> = {
+  [MechType.Fire]: { key: "mech-fire", url: fireMechPng, type: "png" },
   [MechType.Water]: {
     key: "mech-water",
-    dataUri: svgToDataUri(waterMechSvgRaw),
+    url: svgToDataUri(waterMechSvgRaw),
+    type: "svg",
   },
   [MechType.Electric]: {
     key: "mech-electric",
-    dataUri: svgToDataUri(electricMechSvgRaw),
+    url: svgToDataUri(electricMechSvgRaw),
+    type: "svg",
   },
 };
 
@@ -676,17 +685,25 @@ export interface MechSprite {
  * Falls back gracefully to programmatic graphics if SVG loading fails.
  */
 export function preloadMechSVGs(scene: Phaser.Scene): void {
-  for (const [type, entry] of Object.entries(SVG_TEXTURE_KEYS)) {
-    console.log(`[MechGraphics] Loading SVG: ${entry.key} (base64 data URI)`);
+  for (const [type, entry] of Object.entries(MECH_TEXTURE_KEYS)) {
+    console.log(
+      `[MechGraphics] Loading ${entry.type.toUpperCase()}: ${entry.key}`,
+    );
     if (scene.textures.exists(entry.key)) continue;
 
     try {
-      // Use base64 data URI - most reliable method for Phaser SVG loading
-      scene.load.svg(entry.key, entry.dataUri, { width: 128, height: 128 });
-      console.log(`[MechGraphics] Queued SVG load: ${entry.key}`);
+      if (entry.type === "png") {
+        // Load PNG image directly
+        scene.load.image(entry.key, entry.url);
+        console.log(`[MechGraphics] Queued PNG load: ${entry.key}`);
+      } else {
+        // Load SVG with base64 data URI
+        scene.load.svg(entry.key, entry.url, { width: 128, height: 128 });
+        console.log(`[MechGraphics] Queued SVG load: ${entry.key}`);
+      }
     } catch (err) {
       console.warn(
-        `[MechGraphics] Failed to queue SVG load for ${type}, will use programmatic fallback:`,
+        `[MechGraphics] Failed to queue load for ${type}, will use programmatic fallback:`,
         err,
       );
     }
@@ -697,7 +714,7 @@ export function preloadMechSVGs(scene: Phaser.Scene): void {
  * Check if SVG textures are loaded and available.
  */
 function hasSVGTexture(scene: Phaser.Scene, type: MechType): boolean {
-  const entry = SVG_TEXTURE_KEYS[type];
+  const entry = MECH_TEXTURE_KEYS[type];
   return !!entry && scene.textures.exists(entry.key);
 }
 
@@ -726,7 +743,7 @@ export function createMechSprite(
 
   if (hasSVGTexture(scene, type)) {
     try {
-      const entry = SVG_TEXTURE_KEYS[type];
+      const entry = MECH_TEXTURE_KEYS[type];
       const image = scene.add.image(0, 0, entry.key);
       image.setDisplaySize(spriteW, spriteH);
       graphicsObj = image;

@@ -7,6 +7,12 @@ declare module "*.svg?raw" {
   export default content;
 }
 
+// PNG image imports
+declare module "*.png" {
+  const src: string;
+  export default src;
+}
+
 declare module "virtual:pwa-register" {
   interface RegisterSWOptions {
     immediate?: boolean;
