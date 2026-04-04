@@ -6,15 +6,28 @@
 import type Phaser from "phaser";
 import { MechType } from "../types/game";
 
-import electricMechSvg from "../assets/mechs/electric-mech.svg?url";
-// SVG asset imports (resolved by Vite as URLs via ?url suffix)
-import fireMechSvg from "../assets/mechs/fire-mech.svg?url";
-import waterMechSvg from "../assets/mechs/water-mech.svg?url";
+// SVG imports as raw strings for base64 data URI conversion (most reliable for Phaser)
+import electricMechSvgRaw from "../assets/mechs/electric-mech.svg?raw";
+import fireMechSvgRaw from "../assets/mechs/fire-mech.svg?raw";
+import waterMechSvgRaw from "../assets/mechs/water-mech.svg?raw";
 
-const SVG_TEXTURE_KEYS: Record<string, { key: string; url: string }> = {
-  [MechType.Fire]: { key: "mech-fire", url: fireMechSvg },
-  [MechType.Water]: { key: "mech-water", url: waterMechSvg },
-  [MechType.Electric]: { key: "mech-electric", url: electricMechSvg },
+/** Convert SVG string to base64 data URI */
+function svgToDataUri(svgString: string): string {
+  // Encode as base64 for reliable cross-browser support
+  const base64 = btoa(unescape(encodeURIComponent(svgString)));
+  return `data:image/svg+xml;base64,${base64}`;
+}
+
+const SVG_TEXTURE_KEYS: Record<string, { key: string; dataUri: string }> = {
+  [MechType.Fire]: { key: "mech-fire", dataUri: svgToDataUri(fireMechSvgRaw) },
+  [MechType.Water]: {
+    key: "mech-water",
+    dataUri: svgToDataUri(waterMechSvgRaw),
+  },
+  [MechType.Electric]: {
+    key: "mech-electric",
+    dataUri: svgToDataUri(electricMechSvgRaw),
+  },
 };
 
 const MECH_COLORS: Record<
@@ -664,14 +677,13 @@ export interface MechSprite {
  */
 export function preloadMechSVGs(scene: Phaser.Scene): void {
   for (const [type, entry] of Object.entries(SVG_TEXTURE_KEYS)) {
-    console.log(
-      `[MechGraphics] Loading SVG: ${entry.key} from ${entry.url.substring(0, 60)}...`,
-    );
+    console.log(`[MechGraphics] Loading SVG: ${entry.key} (base64 data URI)`);
     if (scene.textures.exists(entry.key)) continue;
 
     try {
-      // Phaser's SVG loader works with both regular URLs and data URIs
-      scene.load.svg(entry.key, entry.url, { width: 128, height: 128 });
+      // Use base64 data URI - most reliable method for Phaser SVG loading
+      scene.load.svg(entry.key, entry.dataUri, { width: 128, height: 128 });
+      console.log(`[MechGraphics] Queued SVG load: ${entry.key}`);
     } catch (err) {
       console.warn(
         `[MechGraphics] Failed to queue SVG load for ${type}, will use programmatic fallback:`,
