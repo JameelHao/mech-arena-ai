@@ -8,6 +8,12 @@ import { type Mech, MechType, TurnPhase } from "../types/game";
 import type { BattleRecord } from "../types/storage";
 import { BattleManager } from "../utils/BattleManager";
 import {
+  type MechSprite,
+  createMechSprite,
+  playMechAttack,
+  playMechDamageFlash,
+} from "../utils/MechGraphics";
+import {
   isOnline,
   onOnlineChange,
   onUpdateAvailable,
@@ -94,9 +100,9 @@ export class BattleScene extends Phaser.Scene {
   private opponentBarGeom = { x: 0, y: 0, w: 0, h: 0 };
   private playerBarGeom = { x: 0, y: 0, w: 0, h: 0 };
 
-  // Sprites (for animation)
-  private playerSpriteContainer!: Phaser.GameObjects.Container;
-  private opponentSpriteContainer!: Phaser.GameObjects.Container;
+  // Mech sprites
+  private playerMechSprite!: MechSprite;
+  private opponentMechSprite!: MechSprite;
 
   // Battle log
   private battleLogText!: Phaser.GameObjects.Text;
@@ -176,39 +182,18 @@ export class BattleScene extends Phaser.Scene {
 
   private createOpponentArea(w: number, h: number): void {
     const spriteX = w * 0.65;
-    const spriteY = h * 0.18;
+    const spriteY = 150;
     const spriteW = Math.min(w * 0.2, 120);
     const spriteH = Math.min(h * 0.22, 120);
 
-    this.opponentSpriteContainer = this.add.container(spriteX, spriteY);
-
-    const opponentSprite = this.add.graphics();
-    opponentSprite.fillStyle(0x555555);
-    opponentSprite.fillRoundedRect(
-      -spriteW / 2,
-      -spriteH / 2,
+    this.opponentMechSprite = createMechSprite(
+      this,
+      OPPONENT_MECH.type,
+      spriteX,
+      spriteY,
       spriteW,
       spriteH,
-      8,
     );
-    opponentSprite.lineStyle(2, COLORS.accentHex, 0.6);
-    opponentSprite.strokeRoundedRect(
-      -spriteW / 2,
-      -spriteH / 2,
-      spriteW,
-      spriteH,
-      8,
-    );
-
-    const label = this.add
-      .text(0, 0, "ENEMY\nMECH", {
-        fontSize: `${Math.max(12, Math.floor(w * 0.02))}px`,
-        color: COLORS.text,
-        align: "center",
-      })
-      .setOrigin(0.5);
-
-    this.opponentSpriteContainer.add([opponentSprite, label]);
 
     // Opponent info panel (top-left)
     const panelX = w * 0.03;
@@ -264,40 +249,18 @@ export class BattleScene extends Phaser.Scene {
 
   private createPlayerArea(w: number, h: number): void {
     const spriteX = w * 0.25;
-    const spriteY = h * 0.6;
+    const spriteY = 450;
     const spriteW = Math.min(w * 0.22, 140);
     const spriteH = Math.min(h * 0.25, 140);
 
-    this.playerSpriteContainer = this.add.container(spriteX, spriteY);
-
-    const playerSprite = this.add.graphics();
-    playerSprite.fillStyle(0x446644);
-    playerSprite.fillRoundedRect(
-      -spriteW / 2,
-      -spriteH / 2,
+    this.playerMechSprite = createMechSprite(
+      this,
+      PLAYER_MECH.type,
+      spriteX,
+      spriteY,
       spriteW,
       spriteH,
-      8,
     );
-    playerSprite.lineStyle(2, COLORS.accentHex, 0.8);
-    playerSprite.strokeRoundedRect(
-      -spriteW / 2,
-      -spriteH / 2,
-      spriteW,
-      spriteH,
-      8,
-    );
-
-    const label = this.add
-      .text(0, 0, "YOUR\nMECH", {
-        fontSize: `${Math.max(14, Math.floor(w * 0.022))}px`,
-        color: COLORS.accent,
-        align: "center",
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5);
-
-    this.playerSpriteContainer.add([playerSprite, label]);
 
     // Player info panel
     const panelW = w * 0.45;
@@ -817,41 +780,15 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private playAttackAnimation(isPlayer: boolean): Promise<void> {
-    return new Promise((resolve) => {
-      const sprite = isPlayer
-        ? this.playerSpriteContainer
-        : this.opponentSpriteContainer;
-      const moveX = isPlayer ? 30 : -30;
-
-      this.tweens.add({
-        targets: sprite,
-        x: sprite.x + moveX,
-        duration: 100,
-        yoyo: true,
-        ease: "Power1",
-        onComplete: () => resolve(),
-      });
-    });
+    const sprite = isPlayer ? this.playerMechSprite : this.opponentMechSprite;
+    return playMechAttack(this, sprite, isPlayer);
   }
 
   private playDamageFlash(targetIsOpponent: boolean): Promise<void> {
-    return new Promise((resolve) => {
-      const sprite = targetIsOpponent
-        ? this.opponentSpriteContainer
-        : this.playerSpriteContainer;
-
-      this.tweens.add({
-        targets: sprite,
-        alpha: 0.2,
-        duration: 80,
-        yoyo: true,
-        repeat: 2,
-        onComplete: () => {
-          sprite.setAlpha(1);
-          resolve();
-        },
-      });
-    });
+    const sprite = targetIsOpponent
+      ? this.opponentMechSprite
+      : this.playerMechSprite;
+    return playMechDamageFlash(this, sprite);
   }
 
   // --- Turn execution ---
