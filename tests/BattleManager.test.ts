@@ -132,50 +132,95 @@ describe("BattleManager", () => {
     });
   });
 
-  describe("executeTurn", () => {
-    it("should advance state through turn phases", () => {
+  describe("executePlayerAttack", () => {
+    it("should deal damage and move to AiThinking phase", () => {
       bm.initBattle(player, opponent);
-      const state = bm.executeTurn(0); // Fire Blast
-      // Fire vs Water opponent → 0.5x → 20 dmg
+      const state = bm.executePlayerAttack(0); // Fire Blast vs Water → 0.5x → 20
       assert.equal(state.opponent.hp, 80);
-      // AI should have attacked too (unless opponent died)
-      assert.ok(state.player.hp <= 100);
-      // Should be back to PLAYER_TURN or BATTLE_OVER
-      assert.ok(
-        state.phase === TurnPhase.PlayerTurn ||
-          state.phase === TurnPhase.BattleOver,
-      );
+      assert.equal(state.phase, TurnPhase.AiThinking);
     });
 
     it("should ignore invalid skill index", () => {
       bm.initBattle(player, opponent);
-      const state = bm.executeTurn(99);
+      const state = bm.executePlayerAttack(99);
       assert.equal(state.opponent.hp, 100);
       assert.equal(state.phase, TurnPhase.PlayerTurn);
     });
 
     it("should ignore negative skill index", () => {
       bm.initBattle(player, opponent);
-      const state = bm.executeTurn(-1);
+      const state = bm.executePlayerAttack(-1);
       assert.equal(state.opponent.hp, 100);
     });
 
-    it("should increment turn count", () => {
+    it("should not execute if not PLAYER_TURN phase", () => {
+      const lowHpOpponent = makeMech("Weak", MechType.Electric, 10);
+      bm.initBattle(player, lowHpOpponent);
+      bm.executePlayerAttack(0); // KO → BattleOver
+      const state = bm.executePlayerAttack(0); // Should be ignored
+      assert.equal(state.phase, TurnPhase.BattleOver);
+    });
+  });
+
+  describe("executeAiAttack", () => {
+    it("should deal damage and return to PlayerTurn", () => {
       bm.initBattle(player, opponent);
-      const state = bm.executeTurn(0);
+      bm.executePlayerAttack(0); // Move to AiThinking
+      // AI skill index 0 = Fire Blast (Fire, 40) vs Fire player → 1.0x → 40
+      const state = bm.executeAiAttack(0);
+      assert.equal(state.player.hp, 60);
+      assert.equal(state.phase, TurnPhase.PlayerTurn);
+      assert.equal(state.turnCount, 2);
+    });
+
+    it("should clamp out-of-range skill index", () => {
+      bm.initBattle(player, opponent);
+      bm.executePlayerAttack(0);
+      const state = bm.executeAiAttack(99); // Clamped to last skill
+      assert.ok(
+        state.phase === TurnPhase.PlayerTurn ||
+          state.phase === TurnPhase.BattleOver,
+      );
+    });
+
+    it("should ignore if not AiThinking phase", () => {
+      bm.initBattle(player, opponent);
+      const state = bm.executeAiAttack(0); // Phase is PlayerTurn, not AiThinking
+      assert.equal(state.phase, TurnPhase.PlayerTurn);
+      assert.equal(state.player.hp, 100);
+    });
+  });
+
+  describe("getRandomAiSkill", () => {
+    it("should return valid skill index", () => {
+      bm.initBattle(player, opponent);
+      for (let i = 0; i < 20; i++) {
+        const idx = bm.getRandomAiSkill();
+        assert.ok(idx >= 0 && idx < opponent.skills.length);
+      }
+    });
+  });
+
+  describe("full turn flow (player + AI)", () => {
+    it("should advance through full turn", () => {
+      bm.initBattle(player, opponent);
+      const afterPlayer = bm.executePlayerAttack(0);
+      assert.equal(afterPlayer.phase, TurnPhase.AiThinking);
+
+      const afterAi = bm.executeAiAttack(0);
+      assert.ok(
+        afterAi.phase === TurnPhase.PlayerTurn ||
+          afterAi.phase === TurnPhase.BattleOver,
+      );
+    });
+
+    it("should increment turn count after full turn", () => {
+      bm.initBattle(player, opponent);
+      bm.executePlayerAttack(0);
+      const state = bm.executeAiAttack(0);
       if (state.phase !== TurnPhase.BattleOver) {
         assert.equal(state.turnCount, 2);
       }
-    });
-
-    it("should not execute if not PLAYER_TURN phase", () => {
-      bm.initBattle(player, opponent);
-      // First execute a turn that ends the battle
-      const lowHpOpponent = makeMech("Weak", MechType.Electric, 10);
-      bm.initBattle(player, lowHpOpponent);
-      bm.executeTurn(0); // Should KO (Fire vs Electric = 1.5x * 40 = 60)
-      const state = bm.executeTurn(0); // Should be ignored
-      assert.equal(state.phase, TurnPhase.BattleOver);
     });
   });
 
@@ -233,23 +278,21 @@ describe("BattleManager", () => {
       const weakOpponent = makeMech("Weak", MechType.Electric, 1);
       bm.initBattle(player, weakOpponent);
       // Fire vs Electric = 1.5x * 40 = 60 → KO
-      const state = bm.executeTurn(0);
+      const state = bm.executePlayerAttack(0);
       assert.equal(state.phase, TurnPhase.BattleOver);
       assert.equal(state.winner, "player");
       assert.equal(state.opponent.hp, 0);
     });
 
     it("should end battle when player KO'd on AI turn", () => {
-      // Give player 1 HP, use defense skill (0 dmg) so opponent survives
       const weakPlayer = makeMech("Weak", MechType.Fire, 1);
       bm.initBattle(weakPlayer, opponent);
       // Use Iron Defense (index 3, 0 damage) so opponent survives
-      const state = bm.executeTurn(3);
-      // AI will attack, and any damage > 0 KOs player
-      if (state.phase === TurnPhase.BattleOver) {
-        assert.equal(state.winner, "opponent");
-      }
-      // If AI picked Iron Defense too, player survives - both outcomes valid
+      bm.executePlayerAttack(3);
+      // Water Cannon (index 0) vs Fire → 1.5x * 30 = 45 → KO
+      const state = bm.executeAiAttack(0);
+      assert.equal(state.phase, TurnPhase.BattleOver);
+      assert.equal(state.winner, "opponent");
     });
   });
 });

@@ -39,14 +39,13 @@ export class BattleManager {
     return this.getState();
   }
 
-  /** Execute a full turn: player skill → check → AI skill → check */
-  executeTurn(skillIndex: number): BattleState {
+  /** Execute player's attack phase. Returns state after player attack + win check. */
+  executePlayerAttack(skillIndex: number): BattleState {
     if (this.state.phase !== TurnPhase.PlayerTurn) return this.getState();
     if (skillIndex < 0 || skillIndex >= this.state.player.skills.length) {
       return this.getState();
     }
 
-    // Player attacks
     const playerSkill = this.state.player.skills[skillIndex];
     const playerDmg = this.calculateDamage(
       playerSkill,
@@ -56,16 +55,23 @@ export class BattleManager {
     this.addLog(`${this.state.player.name} used ${playerSkill.name}!`);
     this.updateHP("opponent", playerDmg);
 
-    // Check win after player attack
     this.state.phase = TurnPhase.CheckWin;
     if (this.checkWin()) return this.getState();
 
-    // AI thinking → AI turn
     this.state.phase = TurnPhase.AiThinking;
-    const aiSkillIndex = this.selectAiSkill();
-    this.state.phase = TurnPhase.AiTurn;
+    return this.getState();
+  }
 
-    const aiSkill = this.state.opponent.skills[aiSkillIndex];
+  /** Execute AI's attack phase with given skill index. */
+  executeAiAttack(aiSkillIndex: number): BattleState {
+    if (this.state.phase !== TurnPhase.AiThinking) return this.getState();
+    const clampedIndex = Math.max(
+      0,
+      Math.min(aiSkillIndex, this.state.opponent.skills.length - 1),
+    );
+
+    this.state.phase = TurnPhase.AiTurn;
+    const aiSkill = this.state.opponent.skills[clampedIndex];
     const aiDmg = this.calculateDamage(
       aiSkill,
       this.state.opponent,
@@ -74,14 +80,17 @@ export class BattleManager {
     this.addLog(`${this.state.opponent.name} used ${aiSkill.name}!`);
     this.updateHP("player", aiDmg);
 
-    // Check win after AI attack
     this.state.phase = TurnPhase.CheckWin;
     if (this.checkWin()) return this.getState();
 
-    // Next turn
     this.state.turnCount++;
     this.state.phase = TurnPhase.PlayerTurn;
     return this.getState();
+  }
+
+  /** Get a random AI skill index (fallback when API unavailable) */
+  getRandomAiSkill(): number {
+    return Math.floor(Math.random() * this.state.opponent.skills.length);
   }
 
   /** Calculate damage with type effectiveness */
@@ -137,11 +146,6 @@ export class BattleManager {
   /** Get a snapshot of the current state */
   getState(): BattleState {
     return { ...this.state };
-  }
-
-  /** AI selects a random skill index */
-  private selectAiSkill(): number {
-    return Math.floor(Math.random() * this.state.opponent.skills.length);
   }
 
   private createEmptyState(): BattleState {
