@@ -9,7 +9,10 @@ import type { BattleRecord } from "../types/storage";
 import { BattleManager } from "../utils/BattleManager";
 import {
   type MechSprite,
+  type PortraitState,
+  PORTRAIT_TEXTURE_KEYS,
   createMechSprite,
+  getPortraitState,
   playMechAttack,
   playMechDamageFlash,
   preloadMechSVGs,
@@ -104,6 +107,12 @@ export class BattleScene extends Phaser.Scene {
   // Mech sprites
   private playerMechSprite!: MechSprite;
   private opponentMechSprite!: MechSprite;
+
+  // Portrait UI
+  private opponentPortrait?: Phaser.GameObjects.Image;
+  private playerPortrait?: Phaser.GameObjects.Image;
+  private opponentPortraitState: PortraitState = "normal";
+  private playerPortraitState: PortraitState = "normal";
 
   // Battle log
   private battleLogText!: Phaser.GameObjects.Text;
@@ -221,8 +230,26 @@ export class BattleScene extends Phaser.Scene {
 
     this.drawPanel(panelX, panelY, panelW, panelH);
 
+    // Portrait (left side of panel)
+    const portraitSize = Math.max(32, Math.floor(panelH * 0.8));
+    const portraitX = panelX + 6 + portraitSize / 2;
+    const portraitY = panelY + panelH / 2;
+    const showPortrait = w >= 400;
+
+    if (showPortrait) {
+      this.opponentPortrait = this.addPortrait(
+        "enemy",
+        this.opponentPortraitState,
+        portraitX,
+        portraitY,
+        portraitSize,
+      );
+    }
+
+    const textOffsetX = showPortrait ? portraitSize + 12 : 10;
+
     this.add
-      .text(panelX + 10, panelY + 6, "Enemy Mech  Lv.5", {
+      .text(panelX + textOffsetX, panelY + 6, "Enemy Mech  Lv.5", {
         fontSize: `${Math.max(11, Math.floor(w * 0.018))}px`,
         color: COLORS.text,
         fontStyle: "bold",
@@ -230,15 +257,15 @@ export class BattleScene extends Phaser.Scene {
       .setOrigin(0, 0);
 
     // HP bar
-    const barX = panelX + 10 + 24;
+    const barX = panelX + textOffsetX + 24;
     const barY = panelY + panelH * 0.5 - Math.max(8, panelH * 0.2) / 2;
-    const barW = panelW - 20 - 24;
+    const barW = panelW - textOffsetX - 10 - 24;
     const barH = Math.max(8, panelH * 0.2);
 
     this.opponentBarGeom = { x: barX, y: barY, w: barW, h: barH };
 
     this.add
-      .text(panelX + 10, panelY + panelH * 0.5 - 2, "HP", {
+      .text(panelX + textOffsetX, panelY + panelH * 0.5 - 2, "HP", {
         fontSize: `${Math.max(10, Math.floor(w * 0.014))}px`,
         color: COLORS.accent,
         fontStyle: "bold",
@@ -288,6 +315,23 @@ export class BattleScene extends Phaser.Scene {
 
     this.drawPanel(panelX, panelY, panelW, panelH);
 
+    // Portrait (right side of panel)
+    const portraitSize = Math.max(32, Math.floor(panelH * 0.8));
+    const showPortrait = w >= 400;
+    const portraitRightPad = showPortrait ? portraitSize + 12 : 0;
+
+    if (showPortrait) {
+      const portraitX = panelX + panelW - 6 - portraitSize / 2;
+      const portraitY = panelY + panelH / 2;
+      this.playerPortrait = this.addPortrait(
+        "player",
+        this.playerPortraitState,
+        portraitX,
+        portraitY,
+        portraitSize,
+      );
+    }
+
     this.add
       .text(panelX + 10, panelY + 6, "Your Mech  Lv.5", {
         fontSize: `${Math.max(11, Math.floor(w * 0.018))}px`,
@@ -299,7 +343,7 @@ export class BattleScene extends Phaser.Scene {
     // HP bar
     const barX = panelX + 10 + 24;
     const barY = panelY + panelH * 0.5 - Math.max(8, panelH * 0.2) / 2;
-    const barW = panelW - 20 - 24;
+    const barW = panelW - 20 - 24 - portraitRightPad;
     const barH = Math.max(8, panelH * 0.2);
 
     this.playerBarGeom = { x: barX, y: barY, w: barW, h: barH };
@@ -323,7 +367,7 @@ export class BattleScene extends Phaser.Scene {
     );
 
     this.playerHPText = this.add
-      .text(panelX + panelW - 10, barY + barH + 2, "100 / 100", {
+      .text(panelX + panelW - 10 - portraitRightPad, barY + barH + 2, "100 / 100", {
         fontSize: `${Math.max(9, Math.floor(w * 0.013))}px`,
         color: "#aaaaaa",
       })
@@ -723,6 +767,61 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
+  // --- Portrait helpers ---
+
+  private addPortrait(
+    side: "enemy" | "player",
+    state: PortraitState,
+    x: number,
+    y: number,
+    size: number,
+  ): Phaser.GameObjects.Image | undefined {
+    const entry = PORTRAIT_TEXTURE_KEYS[side]?.[state];
+    if (!entry || !this.textures.exists(entry.key)) return undefined;
+
+    const img = this.add.image(x, y, entry.key);
+    img.setDisplaySize(size, size);
+    return img;
+  }
+
+  private updatePortraitState(
+    isOpponent: boolean,
+    hpRatio: number,
+    isDefeated: boolean,
+  ): void {
+    const newState = getPortraitState(hpRatio, isDefeated);
+    const currentState = isOpponent
+      ? this.opponentPortraitState
+      : this.playerPortraitState;
+    const portrait = isOpponent
+      ? this.opponentPortrait
+      : this.playerPortrait;
+
+    if (newState === currentState || !portrait) return;
+
+    const side = isOpponent ? "enemy" : "player";
+    const entry = PORTRAIT_TEXTURE_KEYS[side]?.[newState];
+    if (!entry || !this.textures.exists(entry.key)) return;
+
+    // Update state
+    if (isOpponent) {
+      this.opponentPortraitState = newState;
+    } else {
+      this.playerPortraitState = newState;
+    }
+
+    // Switch texture with a scale pulse transition
+    portrait.setTexture(entry.key);
+    this.tweens.add({
+      targets: portrait,
+      scaleX: portrait.scaleX * 0.9,
+      scaleY: portrait.scaleY * 0.9,
+      duration: 100,
+      yoyo: true,
+      ease: "Power2",
+    });
+  }
+
   // --- Panel / HP drawing ---
 
   private drawPanel(x: number, y: number, w: number, h: number): void {
@@ -791,6 +890,7 @@ export class BattleScene extends Phaser.Scene {
             this.displayedPlayerRatio = targetRatio;
           }
           hpText.setText(`${newHp} / ${maxHp}`);
+          this.updatePortraitState(isOpponent, targetRatio, targetRatio <= 0);
           resolve();
         },
       });
@@ -1083,6 +1183,8 @@ export class BattleScene extends Phaser.Scene {
     this.isAnimating = false;
     this.displayedOpponentRatio = 1;
     this.displayedPlayerRatio = 1;
+    this.opponentPortraitState = "normal";
+    this.playerPortraitState = "normal";
 
     this.battleManager.initBattle(
       JSON.parse(JSON.stringify(PLAYER_MECH)),

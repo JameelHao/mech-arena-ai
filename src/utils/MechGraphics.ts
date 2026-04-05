@@ -12,6 +12,14 @@ import waterMechPng from "../assets/mechs/water-mech.png";
 // TODO: 等 Electric 机甲素材扣图完成后添加
 // import electricMechPng from "../assets/mechs/electric-mech.png";
 
+// Portrait imports (64x64 cropped from material pack)
+import enemyNormalPng from "../assets/portraits/enemy-normal.png";
+import enemyAngryPng from "../assets/portraits/enemy-angry.png";
+import enemyDefeatedPng from "../assets/portraits/enemy-defeated.png";
+import playerNormalPng from "../assets/portraits/player-normal.png";
+import playerAngryPng from "../assets/portraits/player-angry.png";
+import playerDefeatedPng from "../assets/portraits/player-defeated.png";
+
 const MECH_TEXTURE_KEYS: Record<
   string,
   { key: string; url: string; type: "png" } | null
@@ -19,6 +27,25 @@ const MECH_TEXTURE_KEYS: Record<
   [MechType.Fire]: { key: "mech-fire", url: fireMechPng, type: "png" },
   [MechType.Water]: { key: "mech-water", url: waterMechPng, type: "png" },
   [MechType.Electric]: null, // 暂时用程序化回退，等素材
+};
+
+import type { PortraitState } from "./portraitState";
+export { type PortraitState, getPortraitState } from "./portraitState";
+
+export const PORTRAIT_TEXTURE_KEYS: Record<
+  string,
+  Record<PortraitState, { key: string; url: string }>
+> = {
+  enemy: {
+    normal: { key: "portrait-enemy-normal", url: enemyNormalPng },
+    angry: { key: "portrait-enemy-angry", url: enemyAngryPng },
+    defeated: { key: "portrait-enemy-defeated", url: enemyDefeatedPng },
+  },
+  player: {
+    normal: { key: "portrait-player-normal", url: playerNormalPng },
+    angry: { key: "portrait-player-angry", url: playerAngryPng },
+    defeated: { key: "portrait-player-defeated", url: playerDefeatedPng },
+  },
 };
 
 const MECH_COLORS: Record<
@@ -685,6 +712,19 @@ export function preloadMechSVGs(scene: Phaser.Scene): void {
         `[MechGraphics] Failed to queue load for ${type}, will use programmatic fallback:`,
         err,
       );
+    }
+  }
+
+  // Load portrait textures
+  for (const [side, states] of Object.entries(PORTRAIT_TEXTURE_KEYS)) {
+    for (const [state, entry] of Object.entries(states)) {
+      if (scene.textures.exists(entry.key)) continue;
+      try {
+        scene.load.image(entry.key, entry.url);
+        console.log(`[MechGraphics] Queued portrait load: ${entry.key}`);
+      } catch (err) {
+        console.warn(`[MechGraphics] Failed to load portrait ${side}-${state}:`, err);
+      }
     }
   }
 }
