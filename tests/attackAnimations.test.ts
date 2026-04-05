@@ -33,7 +33,8 @@ interface GraphicsCall {
 function createMockGraphics() {
   const calls: GraphicsCall[] = [];
   const mock = {
-    fillStyle: (...args: unknown[]) => calls.push({ method: "fillStyle", args }),
+    fillStyle: (...args: unknown[]) =>
+      calls.push({ method: "fillStyle", args }),
     fillCircle: (...args: unknown[]) =>
       calls.push({ method: "fillCircle", args }),
     setPosition: (...args: unknown[]) =>
@@ -95,14 +96,19 @@ describe("playAttackProjectile", () => {
     );
 
     // Should have created at least one graphics object (the projectile)
-    assert.ok(scene._createdGraphics.length >= 1, "should create projectile graphics");
+    assert.ok(
+      scene._createdGraphics.length >= 1,
+      "should create projectile graphics",
+    );
 
     // Should have a tween moving toward target position
-    const flyTween = scene._tweenCalls.find(
-      (t) => t.x === 300 && t.y === 150,
-    );
+    const flyTween = scene._tweenCalls.find((t) => t.x === 300 && t.y === 150);
     assert.ok(flyTween, "should tween projectile to target position");
-    assert.equal(flyTween.duration, 350, "projectile flight duration should be 350ms");
+    assert.equal(
+      flyTween.duration,
+      350,
+      "projectile flight duration should be 350ms",
+    );
   });
 
   it("should handle defense skill type without error", async () => {
@@ -135,7 +141,11 @@ describe("playAttackProjectile", () => {
     const projectile = scene._createdGraphics[0];
     const posCall = projectile._calls.find((c) => c.method === "setPosition");
     assert.ok(posCall, "should call setPosition on projectile");
-    assert.deepEqual(posCall.args, [150, 450], "should set position at attacker coords");
+    assert.deepEqual(
+      posCall.args,
+      [150, 450],
+      "should set position at attacker coords",
+    );
   });
 
   it("should destroy projectile after flight", async () => {
@@ -152,7 +162,10 @@ describe("playAttackProjectile", () => {
 
     const projectile = scene._createdGraphics[0];
     const destroyed = projectile._calls.some((c) => c.method === "destroy");
-    assert.ok(destroyed, "projectile should be destroyed after reaching target");
+    assert.ok(
+      destroyed,
+      "projectile should be destroyed after reaching target",
+    );
   });
 });
 
@@ -161,11 +174,7 @@ describe("playHitReaction", () => {
     const scene = createMockScene();
     const target = createMockMechSprite(300, 150);
 
-    await playHitReaction(
-      scene as never,
-      target as never,
-      MechType.Fire,
-    );
+    await playHitReaction(scene as never, target as never, MechType.Fire);
 
     // Should create explosion + spark graphics
     // 1 explosion + 6 sparks = at least 7
@@ -185,11 +194,7 @@ describe("playHitReaction", () => {
     const scene = createMockScene();
     const target = createMockMechSprite(250, 200);
 
-    await playHitReaction(
-      scene as never,
-      target as never,
-      MechType.Electric,
-    );
+    await playHitReaction(scene as never, target as never, MechType.Electric);
 
     const explosion = scene._createdGraphics[0];
     const posCall = explosion._calls.find((c) => c.method === "setPosition");
@@ -201,11 +206,7 @@ describe("playHitReaction", () => {
     const scene = createMockScene();
     const target = createMockMechSprite(300, 150);
 
-    await playHitReaction(
-      scene as never,
-      target as never,
-      MechType.Water,
-    );
+    await playHitReaction(scene as never, target as never, MechType.Water);
 
     // After the shake tween completes (auto-completed by mock),
     // container.x should be restored to original value
@@ -216,11 +217,7 @@ describe("playHitReaction", () => {
     const scene = createMockScene();
     const target = createMockMechSprite(300, 150);
 
-    await playHitReaction(
-      scene as never,
-      target as never,
-      MechType.Fire,
-    );
+    await playHitReaction(scene as never, target as never, MechType.Fire);
 
     const explosion = scene._createdGraphics[0];
     // Find the explosion expand tween (targets the explosion graphics, duration 350)
