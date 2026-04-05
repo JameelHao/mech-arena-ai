@@ -22,6 +22,8 @@ import {
 } from "../utils/MechGraphics";
 import {
   BATTLE_BG_TINT,
+  EDGE_OVERLAY_ALPHA,
+  GROUND_TINT,
   computeBackgroundLayout,
 } from "../utils/backgroundConfig";
 import {
@@ -120,6 +122,8 @@ export class BattleScene extends Phaser.Scene {
   // Background layers
   private bgImage!: Phaser.GameObjects.Image;
   private groundImage!: Phaser.GameObjects.TileSprite;
+  private transitionGradient!: Phaser.GameObjects.Graphics;
+  private groundEdgeOverlay!: Phaser.GameObjects.Graphics;
 
   // HP display
   private opponentHPBar!: Phaser.GameObjects.Graphics;
@@ -248,6 +252,17 @@ export class BattleScene extends Phaser.Scene {
     this.bgImage.setOrigin(0.5);
     this.bgImage.setTint(BATTLE_BG_TINT);
 
+    // Transition gradient: fades from transparent to ground tone above ground
+    this.transitionGradient = this.add.graphics();
+    const steps = 16;
+    for (let i = 0; i < steps; i++) {
+      const alpha = i / steps;
+      const y = layout.transitionY + (layout.transitionH / steps) * i;
+      const h = layout.transitionH / steps + 1; // +1 to avoid sub-pixel gaps
+      this.transitionGradient.fillStyle(0x1a1a1a, alpha * 0.5);
+      this.transitionGradient.fillRect(0, y, layout.groundW, h);
+    }
+
     // Ground tile layer at the bottom of the scene
     this.groundImage = this.add.tileSprite(
       layout.groundX,
@@ -257,6 +272,20 @@ export class BattleScene extends Phaser.Scene {
       ASSET_REGISTRY.backgrounds.ground.key,
     );
     this.groundImage.setOrigin(0.5);
+    this.groundImage.setTint(GROUND_TINT);
+
+    // Ground edge overlay: feathered top edge for soft blending
+    const groundTopY = layout.groundY - layout.groundH / 2;
+    const edgeH = Math.min(20, layout.groundH * 0.25);
+    this.groundEdgeOverlay = this.add.graphics();
+    const edgeSteps = 10;
+    for (let i = 0; i < edgeSteps; i++) {
+      const alpha = EDGE_OVERLAY_ALPHA * (1 - i / edgeSteps);
+      const y = groundTopY + (edgeH / edgeSteps) * i;
+      const h = edgeH / edgeSteps + 1;
+      this.groundEdgeOverlay.fillStyle(0x1a1a1a, alpha);
+      this.groundEdgeOverlay.fillRect(0, y, layout.groundW, h);
+    }
   }
 
   // --- Opponent area (top) ---
