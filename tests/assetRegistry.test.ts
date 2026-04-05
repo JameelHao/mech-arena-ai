@@ -64,10 +64,10 @@ describe("ASSET_REGISTRY", () => {
     });
 
     for (const state of STATES) {
-      it(`should have fire-${state} portrait entry`, () => {
+      it(`should have player-${state} portrait entry for Fire type`, () => {
         const entry = ASSET_REGISTRY.portraits[MechType.Fire]?.[state];
-        assert.ok(entry, `fire-${state} should exist`);
-        assert.equal(entry.key, `portrait-fire-${state}`);
+        assert.ok(entry, `player-${state} should exist`);
+        assert.equal(entry.key, `portrait-player-${state}`);
         assert.ok(typeof entry.path === "string" && entry.path.length > 0);
       });
     }
@@ -85,13 +85,13 @@ describe("ASSET_REGISTRY", () => {
       assert.equal(ASSET_REGISTRY.portraits[MechType.Electric], null);
     });
 
-    it("fire portrait paths should reference fire-prefixed files", () => {
+    it("player portrait paths should reference player-prefixed files", () => {
       const states = ASSET_REGISTRY.portraits[MechType.Fire];
       assert.ok(states);
       for (const [state, entry] of Object.entries(states)) {
         assert.ok(
-          (entry as AssetEntry).path.includes(`fire-${state}`),
-          `fire-${state} path should contain "fire-${state}", got: ${(entry as AssetEntry).path}`,
+          (entry as AssetEntry).path.includes(`player-${state}`),
+          `player-${state} path should contain "player-${state}", got: ${(entry as AssetEntry).path}`,
         );
       }
     });
@@ -120,6 +120,35 @@ describe("ASSET_REGISTRY", () => {
       assert.equal(entry.key, "bg-ground");
       assert.ok(typeof entry.path === "string" && entry.path.length > 0);
     });
+  });
+
+  describe("portrait distinction", () => {
+    const STATES = ["normal", "angry", "defeated"] as const;
+
+    for (const state of STATES) {
+      it(`player-${state} and water-${state} should have different texture keys`, () => {
+        const player = ASSET_REGISTRY.portraits[MechType.Fire]?.[state];
+        const water = ASSET_REGISTRY.portraits[MechType.Water]?.[state];
+        assert.ok(player, `player-${state} should exist`);
+        assert.ok(water, `water-${state} should exist`);
+        assert.notEqual(
+          player.key,
+          water.key,
+          `player and water ${state} portraits must have different keys`,
+        );
+      });
+
+      it(`player-${state} and water-${state} should have different paths`, () => {
+        const player = ASSET_REGISTRY.portraits[MechType.Fire]?.[state];
+        const water = ASSET_REGISTRY.portraits[MechType.Water]?.[state];
+        assert.ok(player && water);
+        assert.notEqual(
+          player.path,
+          water.path,
+          `player and water ${state} portraits must reference different files`,
+        );
+      });
+    }
   });
 
   describe("key uniqueness", () => {
