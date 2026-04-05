@@ -678,6 +678,10 @@ const EFFECT_FN: Record<
   [MechType.Electric]: createElectricEffects,
 };
 
+// Re-export projectile color utilities (pure module)
+export { PROJECTILE_COLORS, getProjectileColors } from "./projectileColors";
+import { getProjectileColors } from "./projectileColors";
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 export interface MechSprite {
@@ -901,6 +905,202 @@ export function playMechDamageFlash(
       repeat: 2,
       onComplete: () => {
         sprite.container.setAlpha(1);
+      },
+    });
+  });
+}
+
+/**
+ * Play ranged attack animation: muzzle flash at attacker + projectile flying to target.
+ * Returns a Promise that resolves when the projectile reaches the target.
+ */
+export function playAttackAnimation(
+  scene: Phaser.Scene,
+  attacker: MechSprite,
+  target: MechSprite,
+  skillType: MechType,
+): Promise<void> {
+  return new Promise((resolve) => {
+    const colors = getProjectileColors(skillType);
+
+    const ax = attacker.container.x;
+    const ay = attacker.container.y;
+    const tx = target.container.x;
+    const ty = target.container.y;
+
+    const dx = tx - ax;
+    const dy = ty - ay;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    const normX = dx / dist;
+    const normY = dy / dist;
+
+    // Muzzle flash at attacker front
+    const flashX = ax + normX * 30;
+    const flashY = ay + normY * 30;
+    const flash = scene.add.graphics();
+    flash.fillStyle(colors.core, 0.9);
+    flash.fillCircle(0, 0, 12);
+    flash.fillStyle(0xffffff, 0.7);
+    flash.fillCircle(0, 0, 6);
+    flash.setPosition(flashX, flashY);
+
+    scene.tweens.add({
+      targets: flash,
+      alpha: 0,
+      scaleX: 2,
+      scaleY: 2,
+      duration: 150,
+      onComplete: () => flash.destroy(),
+    });
+
+    // Attacker recoil
+    attacker.idleTween.pause();
+    scene.tweens.add({
+      targets: attacker.container,
+      x: ax - normX * 15,
+      y: ay - normY * 10,
+      duration: 80,
+      yoyo: true,
+      ease: "Power2",
+      onComplete: () => attacker.idleTween.resume(),
+    });
+
+    // Projectile
+    const projectile = scene.add.graphics();
+    projectile.fillStyle(colors.glow, 1);
+    projectile.fillCircle(0, 0, 8);
+    projectile.fillStyle(colors.core, 1);
+    projectile.fillCircle(0, 0, 4);
+    projectile.setPosition(flashX, flashY);
+
+    // Trail particles during flight
+    const trailTimer = scene.time.addEvent({
+      delay: 35,
+      loop: true,
+      callback: () => {
+        const trail = scene.add.graphics();
+        trail.fillStyle(colors.trail, 0.6);
+        trail.fillCircle(0, 0, 2 + Math.random() * 2);
+        trail.setPosition(projectile.x, projectile.y);
+        scene.tweens.add({
+          targets: trail,
+          alpha: 0,
+          scaleX: 0.3,
+          scaleY: 0.3,
+          duration: 200,
+          onComplete: () => trail.destroy(),
+        });
+      },
+    });
+
+    // Projectile flight to target
+    scene.tweens.add({
+      targets: projectile,
+      x: tx,
+      y: ty,
+      duration: 300,
+      ease: "Power1",
+      onComplete: () => {
+        trailTimer.destroy();
+        projectile.destroy();
+        resolve();
+      },
+    });
+  });
+}
+
+/**
+ * Play hit reaction: explosion burst + target shake + damage flash.
+ * Returns a Promise that resolves when the reaction animation completes.
+ */
+export function playHitReaction(
+  scene: Phaser.Scene,
+  target: MechSprite,
+  damageType: MechType,
+): Promise<void> {
+  return new Promise((resolve) => {
+    const colors = getProjectileColors(damageType);
+    const tx = target.container.x;
+    const ty = target.container.y;
+
+    // Explosion sparks
+    const sparkCount = 6;
+    for (let i = 0; i < sparkCount; i++) {
+      const spark = scene.add.graphics();
+      const offX = (Math.random() - 0.5) * 50;
+      const offY = (Math.random() - 0.5) * 50;
+      spark.fillStyle(i < 2 ? 0xffffff : colors.core, 0.9);
+      spark.fillCircle(0, 0, 3 + Math.random() * 4);
+      spark.setPosition(tx + offX, ty + offY);
+
+      scene.tweens.add({
+        targets: spark,
+        alpha: 0,
+        scaleX: 2 + Math.random(),
+        scaleY: 2 + Math.random(),
+        x: tx + offX * 2.5,
+        y: ty + offY * 2.5 - 15,
+        duration: 300 + Math.random() * 200,
+        delay: i * 25,
+        onComplete: () => spark.destroy(),
+      });
+    }
+
+    // Central explosion flash
+    const blast = scene.add.graphics();
+    blast.fillStyle(colors.glow, 0.8);
+    blast.fillCircle(0, 0, 22);
+    blast.fillStyle(0xffffff, 0.6);
+    blast.fillCircle(0, 0, 10);
+    blast.setPosition(tx, ty);
+
+    scene.tweens.add({
+      targets: blast,
+      alpha: 0,
+      scaleX: 3,
+      scaleY: 3,
+      duration: 350,
+      onComplete: () => blast.destroy(),
+    });
+
+    // Target shake
+    const origX = target.container.x;
+    target.idleTween.pause();
+
+    scene.tweens.add({
+      targets: target.container,
+      x: origX + 8,
+      duration: 40,
+      yoyo: true,
+      repeat: 3,
+      onComplete: () => {
+        target.container.x = origX;
+        target.idleTween.resume();
+      },
+    });
+
+    // Damage overlay flash
+    scene.tweens.add({
+      targets: target.damageOverlay,
+      alpha: 0.6,
+      duration: 80,
+      yoyo: true,
+      repeat: 2,
+      onComplete: () => {
+        target.damageOverlay.setAlpha(0);
+      },
+    });
+
+    // Container alpha flash — resolve when this completes
+    scene.tweens.add({
+      targets: target.container,
+      alpha: 0.3,
+      duration: 80,
+      yoyo: true,
+      repeat: 2,
+      onComplete: () => {
+        target.container.setAlpha(1);
+        resolve();
       },
     });
   });

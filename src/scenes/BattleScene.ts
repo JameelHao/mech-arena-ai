@@ -13,6 +13,8 @@ import {
   type PortraitState,
   createMechSprite,
   getPortraitState,
+  playAttackAnimation,
+  playHitReaction,
   playMechAttack,
   playMechDamageFlash,
   preloadMechSVGs,
@@ -926,6 +928,7 @@ export class BattleScene extends Phaser.Scene {
     const prevLogLen = state.log.length;
 
     // --- Phase 1: Player attack ---
+    const playerSkill = state.player.skills[index];
     const afterPlayer = this.battleManager.executePlayerAttack(index);
     const playerLogs = afterPlayer.log.slice(prevLogLen);
 
@@ -934,10 +937,22 @@ export class BattleScene extends Phaser.Scene {
       this.addLogMessage(msg);
     }
 
-    await this.playAttackAnimation(true);
-
-    if (afterPlayer.opponent.hp < prevOpponentHp) {
-      await this.playDamageFlash(true);
+    const playerDidDamage = afterPlayer.opponent.hp < prevOpponentHp;
+    if (playerDidDamage && playerSkill.type !== "defense") {
+      // Enhanced animation: projectile + hit reaction
+      await playAttackAnimation(
+        this,
+        this.playerMechSprite,
+        this.opponentMechSprite,
+        playerSkill.type,
+      );
+      await playHitReaction(this, this.opponentMechSprite, playerSkill.type);
+    } else {
+      // Fallback: simple lunge + optional flash
+      await this.playAttackAnimation(true);
+      if (playerDidDamage) {
+        await this.playDamageFlash(true);
+      }
     }
 
     await this.animateHP(
@@ -977,15 +992,35 @@ export class BattleScene extends Phaser.Scene {
     const afterAi = this.battleManager.executeAiAttack(aiSkillIndex);
     const aiLogs = afterAi.log.slice(aiLogLen);
 
+    const aiSkill =
+      afterAi.opponent.skills[
+        Math.max(
+          0,
+          Math.min(aiSkillIndex, afterAi.opponent.skills.length - 1),
+        )
+      ];
+
     this.setTurnIndicator(TurnPhase.AiTurn);
     for (const msg of aiLogs) {
       this.addLogMessage(msg);
     }
 
-    await this.playAttackAnimation(false);
-
-    if (afterAi.player.hp < prevPlayerHp) {
-      await this.playDamageFlash(false);
+    const aiDidDamage = afterAi.player.hp < prevPlayerHp;
+    if (aiDidDamage && aiSkill.type !== "defense") {
+      // Enhanced animation: projectile + hit reaction
+      await playAttackAnimation(
+        this,
+        this.opponentMechSprite,
+        this.playerMechSprite,
+        aiSkill.type,
+      );
+      await playHitReaction(this, this.playerMechSprite, aiSkill.type);
+    } else {
+      // Fallback: simple lunge + optional flash
+      await this.playAttackAnimation(false);
+      if (aiDidDamage) {
+        await this.playDamageFlash(false);
+      }
     }
 
     await this.animateHP(
