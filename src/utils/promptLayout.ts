@@ -56,11 +56,15 @@ export function buildTextareaStyle(cfg: PromptLayoutConfig["textarea"]): string 
 }
 
 /** Build the full CSS string for the save button. */
-export function buildSaveButtonStyle(cfg: PromptLayoutConfig["saveButton"]): string {
+export function buildSaveButtonStyle(
+  cfg: PromptLayoutConfig["saveButton"],
+): string {
   return `background:#0f8;color:#000;border:none;border-radius:4px;padding:${cfg.padding};font-size:12px;font-weight:bold;cursor:pointer;font-family:monospace;`;
 }
 
 /** Build the full CSS string for the install banner. */
-export function buildInstallBannerStyle(cfg: PromptLayoutConfig["installBanner"]): string {
+export function buildInstallBannerStyle(
+  cfg: PromptLayoutConfig["installBanner"],
+): string {
   return `position:fixed;bottom:${cfg.bottom};left:${cfg.left};background:#2a2a2a;color:#0f8;border:1px solid #444;border-radius:8px;padding:10px 14px;font-size:13px;font-family:monospace;z-index:200;display:flex;align-items:center;gap:10px;max-width:280px;`;
 }
