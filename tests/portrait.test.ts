@@ -41,4 +41,18 @@ describe("getPortraitState", () => {
     // Just above 0.25 -> angry
     assert.equal(getPortraitState(0.251, false), "angry");
   });
+
+  it("should clamp hpRatio above 1.0 to normal", () => {
+    assert.equal(getPortraitState(1.5, false), "normal");
+    assert.equal(getPortraitState(999, false), "normal");
+  });
+
+  it("should clamp hpRatio below 0 to defeated", () => {
+    assert.equal(getPortraitState(-0.5, false), "defeated");
+    assert.equal(getPortraitState(-100, false), "defeated");
+  });
+
+  it("should handle NaN hpRatio as defeated", () => {
+    assert.equal(getPortraitState(Number.NaN, false), "defeated");
+  });
 });

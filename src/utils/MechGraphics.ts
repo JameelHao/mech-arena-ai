@@ -696,17 +696,12 @@ export interface MechSprite {
 export function preloadMechSVGs(scene: Phaser.Scene): void {
   for (const [type, entry] of Object.entries(MECH_TEXTURE_KEYS)) {
     if (!entry) {
-      console.log(
-        `[MechGraphics] ${type}: no texture, will use programmatic fallback`,
-      );
       continue;
     }
-    console.log(`[MechGraphics] Loading PNG: ${entry.key}`);
     if (scene.textures.exists(entry.key)) continue;
 
     try {
       scene.load.image(entry.key, entry.url);
-      console.log(`[MechGraphics] Queued PNG load: ${entry.key}`);
     } catch (err) {
       console.warn(
         `[MechGraphics] Failed to queue load for ${type}, will use programmatic fallback:`,
@@ -721,7 +716,6 @@ export function preloadMechSVGs(scene: Phaser.Scene): void {
       if (scene.textures.exists(entry.key)) continue;
       try {
         scene.load.image(entry.key, entry.url);
-        console.log(`[MechGraphics] Queued portrait load: ${entry.key}`);
       } catch (err) {
         console.warn(
           `[MechGraphics] Failed to load portrait ${side}-${state}:`,
@@ -780,7 +774,6 @@ export function createMechSprite(
       graphicsObj = graphics;
     }
   } else {
-    console.log(`[MechGraphics] Using programmatic graphics for ${type}`);
     const graphics = scene.add.graphics();
     const drawFn = DRAW_FN[type] ?? drawFireMech;
     drawFn(graphics, spriteW, spriteH);

@@ -14,8 +14,11 @@ export function getPortraitState(
   hpRatio: number,
   isDefeated: boolean,
 ): PortraitState {
-  if (isDefeated || hpRatio <= 0) return "defeated";
-  if (hpRatio <= 0.25) return "defeated";
-  if (hpRatio <= 0.5) return "angry";
+  if (isDefeated) return "defeated";
+  if (!Number.isFinite(hpRatio)) return "defeated";
+  const clamped = Math.max(0, Math.min(1, hpRatio));
+  if (clamped <= 0) return "defeated";
+  if (clamped <= 0.25) return "defeated";
+  if (clamped <= 0.5) return "angry";
   return "normal";
 }
