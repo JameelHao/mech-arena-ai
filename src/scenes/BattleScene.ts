@@ -145,11 +145,9 @@ export class BattleScene extends Phaser.Scene {
 
   constructor() {
     super({ key: "BattleScene" });
-    console.log("[BattleScene] constructor called");
   }
 
   preload(): void {
-    console.log("[BattleScene] preload() start");
 
     // Catch any asset load errors so they don't cause a black screen
     this.load.on("loaderror", (file: { key: string; url: string }) => {
@@ -159,12 +157,11 @@ export class BattleScene extends Phaser.Scene {
     preloadMechSVGs(this);
 
     this.load.on("complete", () => {
-      console.log("[BattleScene] preload complete");
+      // Assets loaded
     });
   }
 
   create(): void {
-    console.log("[BattleScene] create() start");
     this.battleManager = new BattleManager();
     this.battleManager.initBattle(
       JSON.parse(JSON.stringify(PLAYER_MECH)),
