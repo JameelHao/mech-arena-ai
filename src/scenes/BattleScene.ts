@@ -89,7 +89,16 @@ const OPPONENT_MECH: Mech = {
 };
 
 const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-const LOG_MAX_LINES = 5;
+const LOG_MAX_LINES = 6;
+
+// Log message color mapping by prefix
+const LOG_COLORS: Record<string, string> = {
+  "[DMG]": "#ffd700", // gold for damage
+  "[EFF]": "#00ff88", // green for effects/defense
+  "[TURN]": "#888888", // gray for turn transitions
+  "[SUP]": "#ff6666", // red for super effective
+  "[RES]": "#66ccff", // blue for not very effective
+};
 const HP_TWEEN_DURATION = 500;
 
 const PROMPT_MAX_LENGTH = 500;
@@ -458,7 +467,7 @@ export class BattleScene extends Phaser.Scene {
     const logX = w * 0.03;
     const logY = h * 0.37;
     const logW = w * 0.44;
-    const logH = h * 0.12;
+    const logH = Math.min(h * 0.15, h - logY - 10);
 
     const bg = this.add.graphics();
     bg.fillStyle(0x111111, 0.85);
@@ -485,12 +494,32 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private addLogMessage(msg: string): void {
-    this.logMessages.push(`> ${msg}`);
+    // Strip prefix for display, determine color
+    let displayMsg = msg;
+    let color = COLORS.accent;
+    for (const [prefix, c] of Object.entries(LOG_COLORS)) {
+      if (msg.startsWith(prefix)) {
+        displayMsg = msg.slice(prefix.length);
+        color = c;
+        break;
+      }
+    }
+    this.logMessages.push(`> ${displayMsg}`);
     // Keep last N lines for auto-scroll
     if (this.logMessages.length > LOG_MAX_LINES) {
       this.logMessages.shift();
     }
     this.battleLogText.setText(this.logMessages.join("\n"));
+    this.battleLogText.setColor(color);
+
+    // Flash highlight for new message
+    this.battleLogText.setAlpha(0.5);
+    this.tweens.add({
+      targets: this.battleLogText,
+      alpha: 1,
+      duration: 300,
+      ease: "Linear",
+    });
   }
 
   // --- Spinner ---

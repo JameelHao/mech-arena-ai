@@ -54,6 +54,13 @@ export class BattleManager {
     );
     this.addLog(`${this.state.player.name} used ${playerSkill.name}!`);
     this.updateHP("opponent", playerDmg);
+    if (playerSkill.type === "defense" || playerDmg === 0) {
+      this.addLog(`[EFF]${this.state.player.name} raised defense!`);
+    } else {
+      this.addLog(
+        `[DMG]${this.state.opponent.name} took ${playerDmg} damage! (HP: ${this.state.opponent.hp}/${this.state.opponent.maxHp})`,
+      );
+    }
 
     this.state.phase = TurnPhase.CheckWin;
     if (this.checkWin()) return this.getState();
@@ -79,11 +86,19 @@ export class BattleManager {
     );
     this.addLog(`${this.state.opponent.name} used ${aiSkill.name}!`);
     this.updateHP("player", aiDmg);
+    if (aiSkill.type === "defense" || aiDmg === 0) {
+      this.addLog(`[EFF]${this.state.opponent.name} raised defense!`);
+    } else {
+      this.addLog(
+        `[DMG]${this.state.player.name} took ${aiDmg} damage! (HP: ${this.state.player.hp}/${this.state.player.maxHp})`,
+      );
+    }
 
     this.state.phase = TurnPhase.CheckWin;
     if (this.checkWin()) return this.getState();
 
     this.state.turnCount++;
+    this.addLog(`[TURN]--- Turn ${this.state.turnCount} ---`);
     this.state.phase = TurnPhase.PlayerTurn;
     return this.getState();
   }
@@ -102,8 +117,8 @@ export class BattleManager {
       defender.type,
     );
     const damage = Math.round(skill.damage * effectiveness);
-    if (effectiveness > 1) this.addLog("It's super effective!");
-    if (effectiveness < 1) this.addLog("It's not very effective...");
+    if (effectiveness > 1) this.addLog("[SUP]It's super effective!");
+    if (effectiveness < 1) this.addLog("[RES]It's not very effective...");
     return damage;
   }
 
@@ -131,13 +146,15 @@ export class BattleManager {
     if (this.state.opponent.hp <= 0) {
       this.state.winner = "player";
       this.state.phase = TurnPhase.BattleOver;
-      this.addLog(`${this.state.opponent.name} was defeated! You win!`);
+      this.addLog(`${this.state.opponent.name} was defeated!`);
+      this.addLog(`[TURN]${this.state.player.name} wins!`);
       return true;
     }
     if (this.state.player.hp <= 0) {
       this.state.winner = "opponent";
       this.state.phase = TurnPhase.BattleOver;
       this.addLog(`${this.state.player.name} was defeated...`);
+      this.addLog(`[TURN]${this.state.opponent.name} wins!`);
       return true;
     }
     return false;
