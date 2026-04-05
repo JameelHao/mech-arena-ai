@@ -4,6 +4,8 @@
 
 import Phaser from "phaser";
 import { callBattleAPI } from "../api/battleClient";
+import battleBgPng from "../assets/backgrounds/battle-bg-city.png";
+import battleGroundPng from "../assets/backgrounds/battle-ground.png";
 import { type Mech, MechType, TurnPhase } from "../types/game";
 import type { BattleRecord } from "../types/storage";
 import { BattleManager } from "../utils/BattleManager";
@@ -17,6 +19,10 @@ import {
   playMechDamageFlash,
   preloadMechSVGs,
 } from "../utils/MechGraphics";
+import {
+  BATTLE_BG_TINT,
+  computeBackgroundLayout,
+} from "../utils/backgroundConfig";
 import {
   isOnline,
   onOnlineChange,
@@ -94,6 +100,10 @@ export class BattleScene extends Phaser.Scene {
   private battleManager!: BattleManager;
   private isAnimating = false;
 
+  // Background layers
+  private bgImage!: Phaser.GameObjects.Image;
+  private groundImage!: Phaser.GameObjects.TileSprite;
+
   // HP display
   private opponentHPBar!: Phaser.GameObjects.Graphics;
   private playerHPBar!: Phaser.GameObjects.Graphics;
@@ -158,6 +168,9 @@ export class BattleScene extends Phaser.Scene {
 
     preloadMechSVGs(this);
 
+    this.load.image("battle-bg", battleBgPng);
+    this.load.image("battle-ground", battleGroundPng);
+
     this.load.on("complete", () => {
       console.log("[BattleScene] preload complete");
     });
@@ -196,6 +209,7 @@ export class BattleScene extends Phaser.Scene {
   private buildUI(w: number, h: number): void {
     this.skillButtons = [];
     this.skillHitZones = [];
+    this.createBackground(w, h);
     this.createOpponentArea(w, h);
     this.createPlayerArea(w, h);
     this.createTurnIndicator(w, h);
@@ -203,6 +217,28 @@ export class BattleScene extends Phaser.Scene {
     this.createSkillButtons(w, h);
     this.createSpinner(w, h);
     this.createHistoryButton(w, h);
+  }
+
+  // --- Background layers ---
+
+  private createBackground(w: number, h: number): void {
+    const layout = computeBackgroundLayout(w, h);
+
+    // Full-screen background image, darkened for UI readability
+    this.bgImage = this.add.image(layout.bgX, layout.bgY, "battle-bg");
+    this.bgImage.setDisplaySize(layout.bgW, layout.bgH);
+    this.bgImage.setOrigin(0.5);
+    this.bgImage.setTint(BATTLE_BG_TINT);
+
+    // Ground tile layer at the bottom of the scene
+    this.groundImage = this.add.tileSprite(
+      layout.groundX,
+      layout.groundY,
+      layout.groundW,
+      layout.groundH,
+      "battle-ground",
+    );
+    this.groundImage.setOrigin(0.5);
   }
 
   // --- Opponent area (top) ---
