@@ -273,6 +273,92 @@ describe("BattleManager", () => {
     });
   });
 
+  describe("battle log content", () => {
+    it("should log damage amount and remaining HP after attack", () => {
+      bm.initBattle(player, opponent);
+      const state = bm.executePlayerAttack(0); // Fire Blast vs Water → 0.5x → 20
+      const dmgLog = state.log.find((m) => m.startsWith("[DMG]"));
+      assert.ok(dmgLog, "should have a [DMG] prefixed log");
+      assert.ok(dmgLog.includes("20 damage"), "should include damage amount");
+      assert.ok(dmgLog.includes("HP: 80/100"), "should include remaining HP");
+    });
+
+    it("should log defense skill usage", () => {
+      bm.initBattle(player, opponent);
+      const state = bm.executePlayerAttack(3); // Iron Defense
+      const effLog = state.log.find((m) => m.startsWith("[EFF]"));
+      assert.ok(effLog, "should have an [EFF] prefixed log");
+      assert.ok(
+        effLog.includes("raised defense"),
+        "should mention raised defense",
+      );
+    });
+
+    it("should log turn transition after AI attack", () => {
+      bm.initBattle(player, opponent);
+      bm.executePlayerAttack(0);
+      const state = bm.executeAiAttack(0);
+      if (state.phase !== TurnPhase.BattleOver) {
+        const turnLog = state.log.find((m) => m.startsWith("[TURN]"));
+        assert.ok(turnLog, "should have a [TURN] prefixed log");
+        assert.ok(turnLog.includes("Turn 2"), "should indicate turn 2");
+      }
+    });
+
+    it("should log winner on battle end", () => {
+      const weakOpponent = makeMech("Weak", MechType.Electric, 1);
+      bm.initBattle(player, weakOpponent);
+      const state = bm.executePlayerAttack(0); // Fire vs Electric = 1.5x * 40 = 60 → KO
+      const winLog = state.log.find(
+        (m) => m.startsWith("[TURN]") && m.includes("wins!"),
+      );
+      assert.ok(winLog, "should have a [TURN] win log");
+      assert.ok(winLog.includes("PlayerMech wins!"));
+    });
+
+    it("should log super effective with [SUP] prefix", () => {
+      bm.initBattle(player, opponent);
+      // Water Cannon (index 1) is Water type, player is Fire → super effective
+      // But player attacks opponent... player is Fire, opponent is Water
+      // Fire Blast (Fire) vs Water defender → not effective
+      // Need: Water skill vs Fire defender
+      // Let's use opponent (Water) attacking player (Fire) — Water Cannon is super effective
+      bm.executePlayerAttack(0); // move to AiThinking
+      const state = bm.executeAiAttack(1); // Water Cannon vs Fire player → super effective
+      const supLog = state.log.find((m) => m.startsWith("[SUP]"));
+      assert.ok(supLog, "should have a [SUP] prefixed log");
+    });
+
+    it("should log not effective with [RES] prefix", () => {
+      bm.initBattle(player, opponent);
+      // Fire Blast (Fire) vs Water opponent → not effective
+      const state = bm.executePlayerAttack(0);
+      const resLog = state.log.find((m) => m.startsWith("[RES]"));
+      assert.ok(resLog, "should have a [RES] prefixed log");
+    });
+
+    it("should log AI defense skill", () => {
+      bm.initBattle(player, opponent);
+      bm.executePlayerAttack(0);
+      const state = bm.executeAiAttack(3); // Iron Defense
+      const effLog = state.log.filter((m) => m.startsWith("[EFF]"));
+      const aiDefLog = effLog.find((m) => m.includes("EnemyMech"));
+      assert.ok(aiDefLog, "should log AI defense");
+      assert.ok(aiDefLog.includes("raised defense"));
+    });
+
+    it("should log damage when AI deals damage", () => {
+      bm.initBattle(player, opponent);
+      bm.executePlayerAttack(0);
+      const state = bm.executeAiAttack(0); // Fire Blast (40) vs Fire player → 1.0x → 40
+      const dmgLogs = state.log.filter((m) => m.startsWith("[DMG]"));
+      const aiDmgLog = dmgLogs.find((m) => m.includes("PlayerMech"));
+      assert.ok(aiDmgLog, "should have AI damage log for player");
+      assert.ok(aiDmgLog.includes("40 damage"), "should show 40 damage");
+      assert.ok(aiDmgLog.includes("HP: 60/100"), "should show remaining HP");
+    });
+  });
+
   describe("state machine flow", () => {
     it("should end battle when opponent KO'd on player turn", () => {
       const weakOpponent = makeMech("Weak", MechType.Electric, 1);
