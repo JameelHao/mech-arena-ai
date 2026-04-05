@@ -35,18 +35,55 @@ describe("ASSET_REGISTRY", () => {
 
   describe("portraits", () => {
     const STATES = ["normal", "angry", "defeated"] as const;
-    const SIDES = ["player", "enemy"] as const;
 
-    for (const side of SIDES) {
-      for (const state of STATES) {
-        it(`should have ${side}-${state} portrait entry`, () => {
-          const entry = ASSET_REGISTRY.portraits[side][state];
-          assert.ok(entry, `${side}-${state} should exist`);
-          assert.equal(entry.key, `portrait-${side}-${state}`);
-          assert.ok(typeof entry.path === "string" && entry.path.length > 0);
-        });
-      }
+    it("should index portraits by MechType, not player/enemy", () => {
+      assert.ok(
+        ASSET_REGISTRY.portraits[MechType.Fire],
+        "fire portraits should exist",
+      );
+      assert.ok(
+        ASSET_REGISTRY.portraits[MechType.Water],
+        "water portraits should exist",
+      );
+      assert.equal(
+        ASSET_REGISTRY.portraits[MechType.Electric],
+        null,
+        "electric portraits should be null",
+      );
+      // Ensure old player/enemy keys no longer exist
+      assert.equal(
+        (ASSET_REGISTRY.portraits as Record<string, unknown>).player,
+        undefined,
+        "player key should not exist",
+      );
+      assert.equal(
+        (ASSET_REGISTRY.portraits as Record<string, unknown>).enemy,
+        undefined,
+        "enemy key should not exist",
+      );
+    });
+
+    for (const state of STATES) {
+      it(`should have fire-${state} portrait entry`, () => {
+        const entry = ASSET_REGISTRY.portraits[MechType.Fire]?.[state];
+        assert.ok(entry, `fire-${state} should exist`);
+        assert.equal(entry.key, `portrait-fire-${state}`);
+        assert.ok(typeof entry.path === "string" && entry.path.length > 0);
+      });
     }
+
+    for (const state of STATES) {
+      it(`should have water-${state} portrait entry`, () => {
+        const entry = ASSET_REGISTRY.portraits[MechType.Water]?.[state];
+        assert.ok(entry, `water-${state} should exist`);
+        assert.equal(entry.key, `portrait-water-${state}`);
+        assert.ok(typeof entry.path === "string" && entry.path.length > 0);
+      });
+    }
+
+    it("should have null for electric type (no portrait yet)", () => {
+      assert.equal(ASSET_REGISTRY.portraits[MechType.Electric], null);
+    });
   });
 
   describe("backgrounds", () => {
@@ -71,6 +108,7 @@ describe("ASSET_REGISTRY", () => {
         if (entry) keys.push(entry.key);
       }
       for (const states of Object.values(ASSET_REGISTRY.portraits)) {
+        if (!states) continue;
         for (const entry of Object.values(states)) {
           keys.push((entry as AssetEntry).key);
         }
