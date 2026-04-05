@@ -46,12 +46,16 @@ export const PROMPT_LAYOUT: PromptLayoutConfig = {
 };
 
 /** Build the full CSS string for the prompt container. */
-export function buildContainerStyle(cfg: PromptLayoutConfig["container"]): string {
+export function buildContainerStyle(
+  cfg: PromptLayoutConfig["container"],
+): string {
   return `position:fixed;bottom:${cfg.bottom};left:${cfg.left};z-index:100;display:flex;flex-direction:column;gap:${cfg.gap};width:${cfg.width};max-width:${cfg.maxWidth};`;
 }
 
 /** Build the full CSS string for the prompt textarea. */
-export function buildTextareaStyle(cfg: PromptLayoutConfig["textarea"]): string {
+export function buildTextareaStyle(
+  cfg: PromptLayoutConfig["textarea"],
+): string {
   return `width:100%;height:${cfg.height};background:#222;color:#0f8;border:1px solid #444;border-radius:6px;padding:${cfg.padding};font-size:12px;resize:none;font-family:monospace;box-sizing:border-box;`;
 }
 

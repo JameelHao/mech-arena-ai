@@ -25,19 +25,19 @@ import {
   computeBackgroundLayout,
 } from "../utils/backgroundConfig";
 import {
-  isOnline,
-  onOnlineChange,
-  onUpdateAvailable,
-  shouldShowInstallPrompt,
-  triggerInstallPrompt,
-} from "../utils/pwa";
-import {
   PROMPT_LAYOUT,
   buildContainerStyle,
   buildInstallBannerStyle,
   buildSaveButtonStyle,
   buildTextareaStyle,
 } from "../utils/promptLayout";
+import {
+  isOnline,
+  onOnlineChange,
+  onUpdateAvailable,
+  shouldShowInstallPrompt,
+  triggerInstallPrompt,
+} from "../utils/pwa";
 import {
   loadMechPrompt,
   saveBattleHistory,
