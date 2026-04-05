@@ -26,6 +26,7 @@ import {
   GROUND_TINT,
   computeBackgroundLayout,
 } from "../utils/backgroundConfig";
+import { LOG_MAX_LINES, parseLogMessage } from "../utils/logColors";
 import {
   PROMPT_LAYOUT,
   buildContainerStyle,
@@ -40,7 +41,6 @@ import {
   shouldShowInstallPrompt,
   triggerInstallPrompt,
 } from "../utils/pwa";
-import { parseLogMessage, LOG_MAX_LINES } from "../utils/logColors";
 import {
   loadMechPrompt,
   saveBattleHistory,
@@ -499,7 +499,7 @@ export class BattleScene extends Phaser.Scene {
     const logX = w * 0.03;
     const logY = h * 0.37;
     const logW = w * 0.44;
-    const logH = Math.min(h * 0.20, h - logY - 10);
+    const logH = Math.min(h * 0.2, h - logY - 10);
 
     const bg = this.add.graphics();
     bg.fillStyle(0x111111, 0.85);
