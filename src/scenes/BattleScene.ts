@@ -276,7 +276,7 @@ export class BattleScene extends Phaser.Scene {
 
     if (showPortrait) {
       this.opponentPortrait = this.addPortrait(
-        "enemy",
+        OPPONENT_MECH.type,
         this.opponentPortraitState,
         portraitX,
         portraitY,
@@ -362,7 +362,7 @@ export class BattleScene extends Phaser.Scene {
       const portraitX = panelX + panelW - 6 - portraitSize / 2;
       const portraitY = panelY + panelH / 2;
       this.playerPortrait = this.addPortrait(
-        "player",
+        PLAYER_MECH.type,
         this.playerPortraitState,
         portraitX,
         portraitY,
@@ -813,13 +813,15 @@ export class BattleScene extends Phaser.Scene {
   // --- Portrait helpers ---
 
   private addPortrait(
-    side: "enemy" | "player",
+    mechType: MechType,
     state: PortraitState,
     x: number,
     y: number,
     size: number,
   ): Phaser.GameObjects.Image | undefined {
-    const entry = PORTRAIT_TEXTURE_KEYS[side]?.[state];
+    const states = PORTRAIT_TEXTURE_KEYS[mechType];
+    if (!states) return undefined;
+    const entry = states[state];
     if (!entry || !this.textures.exists(entry.key)) return undefined;
 
     const img = this.add.image(x, y, entry.key);
@@ -840,8 +842,10 @@ export class BattleScene extends Phaser.Scene {
 
     if (newState === currentState || !portrait) return;
 
-    const side = isOpponent ? "enemy" : "player";
-    const entry = PORTRAIT_TEXTURE_KEYS[side]?.[newState];
+    const mechType = isOpponent ? OPPONENT_MECH.type : PLAYER_MECH.type;
+    const states = PORTRAIT_TEXTURE_KEYS[mechType];
+    if (!states) return;
+    const entry = states[newState];
     if (!entry || !this.textures.exists(entry.key)) return;
 
     // Update state

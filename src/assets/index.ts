@@ -14,13 +14,13 @@ import type { PortraitState } from "../utils/portraitState";
 import fireMechPng from "./mechs/fire-mech.png";
 import waterMechPng from "./mechs/water-mech.png";
 
-// Portrait PNGs (64x64)
-import enemyAngryPng from "./portraits/enemy-angry.png";
-import enemyDefeatedPng from "./portraits/enemy-defeated.png";
-import enemyNormalPng from "./portraits/enemy-normal.png";
-import playerAngryPng from "./portraits/player-angry.png";
-import playerDefeatedPng from "./portraits/player-defeated.png";
-import playerNormalPng from "./portraits/player-normal.png";
+// Portrait PNGs (64x64) — indexed by MechType
+import fireAngryPng from "./portraits/player-angry.png";
+import fireDefeatedPng from "./portraits/player-defeated.png";
+import fireNormalPng from "./portraits/player-normal.png";
+import waterAngryPng from "./portraits/water-angry.png";
+import waterDefeatedPng from "./portraits/water-defeated.png";
+import waterNormalPng from "./portraits/water-normal.png";
 
 // Background PNGs
 import battleBgCityPng from "./backgrounds/battle-bg-city.png";
@@ -38,16 +38,17 @@ export const ASSET_REGISTRY = {
     [MechType.Electric]: null, // programmatic fallback until asset is ready
   },
   portraits: {
-    player: {
-      normal: { key: "portrait-player-normal", path: playerNormalPng },
-      angry: { key: "portrait-player-angry", path: playerAngryPng },
-      defeated: { key: "portrait-player-defeated", path: playerDefeatedPng },
+    [MechType.Fire]: {
+      normal: { key: "portrait-fire-normal", path: fireNormalPng },
+      angry: { key: "portrait-fire-angry", path: fireAngryPng },
+      defeated: { key: "portrait-fire-defeated", path: fireDefeatedPng },
     } as Record<PortraitState, AssetEntry>,
-    enemy: {
-      normal: { key: "portrait-enemy-normal", path: enemyNormalPng },
-      angry: { key: "portrait-enemy-angry", path: enemyAngryPng },
-      defeated: { key: "portrait-enemy-defeated", path: enemyDefeatedPng },
+    [MechType.Water]: {
+      normal: { key: "portrait-water-normal", path: waterNormalPng },
+      angry: { key: "portrait-water-angry", path: waterAngryPng },
+      defeated: { key: "portrait-water-defeated", path: waterDefeatedPng },
     } as Record<PortraitState, AssetEntry>,
+    [MechType.Electric]: null, // no portrait asset yet
   },
   backgrounds: {
     city: { key: "bg-city", path: battleBgCityPng } as AssetEntry,
@@ -74,14 +75,15 @@ export function preloadAllAssets(scene: Phaser.Scene): void {
   }
 
   // Portraits
-  for (const [side, states] of Object.entries(ASSET_REGISTRY.portraits)) {
+  for (const [mechType, states] of Object.entries(ASSET_REGISTRY.portraits)) {
+    if (!states) continue;
     for (const [state, entry] of Object.entries(states)) {
       if (scene.textures.exists(entry.key)) continue;
       try {
         scene.load.image(entry.key, entry.path);
       } catch (err) {
         console.warn(
-          `[AssetRegistry] Failed to queue portrait ${side}-${state}:`,
+          `[AssetRegistry] Failed to queue portrait ${mechType}-${state}:`,
           err,
         );
       }
