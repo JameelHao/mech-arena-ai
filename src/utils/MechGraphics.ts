@@ -12,13 +12,13 @@ import waterMechPng from "../assets/mechs/water-mech.png";
 // TODO: 等 Electric 机甲素材扣图完成后添加
 // import electricMechPng from "../assets/mechs/electric-mech.png";
 
-// Portrait imports (64x64 cropped from material pack)
-import enemyNormalPng from "../assets/portraits/enemy-normal.png";
 import enemyAngryPng from "../assets/portraits/enemy-angry.png";
 import enemyDefeatedPng from "../assets/portraits/enemy-defeated.png";
-import playerNormalPng from "../assets/portraits/player-normal.png";
+// Portrait imports (64x64 cropped from material pack)
+import enemyNormalPng from "../assets/portraits/enemy-normal.png";
 import playerAngryPng from "../assets/portraits/player-angry.png";
 import playerDefeatedPng from "../assets/portraits/player-defeated.png";
+import playerNormalPng from "../assets/portraits/player-normal.png";
 
 const MECH_TEXTURE_KEYS: Record<
   string,
@@ -723,7 +723,10 @@ export function preloadMechSVGs(scene: Phaser.Scene): void {
         scene.load.image(entry.key, entry.url);
         console.log(`[MechGraphics] Queued portrait load: ${entry.key}`);
       } catch (err) {
-        console.warn(`[MechGraphics] Failed to load portrait ${side}-${state}:`, err);
+        console.warn(
+          `[MechGraphics] Failed to load portrait ${side}-${state}:`,
+          err,
+        );
       }
     }
   }

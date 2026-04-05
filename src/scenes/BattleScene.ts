@@ -9,8 +9,8 @@ import type { BattleRecord } from "../types/storage";
 import { BattleManager } from "../utils/BattleManager";
 import {
   type MechSprite,
-  type PortraitState,
   PORTRAIT_TEXTURE_KEYS,
+  type PortraitState,
   createMechSprite,
   getPortraitState,
   playMechAttack,
@@ -367,10 +367,15 @@ export class BattleScene extends Phaser.Scene {
     );
 
     this.playerHPText = this.add
-      .text(panelX + panelW - 10 - portraitRightPad, barY + barH + 2, "100 / 100", {
-        fontSize: `${Math.max(9, Math.floor(w * 0.013))}px`,
-        color: "#aaaaaa",
-      })
+      .text(
+        panelX + panelW - 10 - portraitRightPad,
+        barY + barH + 2,
+        "100 / 100",
+        {
+          fontSize: `${Math.max(9, Math.floor(w * 0.013))}px`,
+          color: "#aaaaaa",
+        },
+      )
       .setOrigin(1, 0);
   }
 
@@ -793,9 +798,7 @@ export class BattleScene extends Phaser.Scene {
     const currentState = isOpponent
       ? this.opponentPortraitState
       : this.playerPortraitState;
-    const portrait = isOpponent
-      ? this.opponentPortrait
-      : this.playerPortrait;
+    const portrait = isOpponent ? this.opponentPortrait : this.playerPortrait;
 
     if (newState === currentState || !portrait) return;
 
