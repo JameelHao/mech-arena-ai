@@ -40,6 +40,7 @@ import {
   shouldShowInstallPrompt,
   triggerInstallPrompt,
 } from "../utils/pwa";
+import { parseLogMessage, LOG_MAX_LINES } from "../utils/logColors";
 import {
   loadMechPrompt,
   saveBattleHistory,
@@ -98,16 +99,6 @@ const OPPONENT_MECH: Mech = {
 };
 
 const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-const LOG_MAX_LINES = 6;
-
-// Log message color mapping by prefix
-const LOG_COLORS: Record<string, string> = {
-  "[DMG]": "#ffd700", // gold for damage
-  "[EFF]": "#00ff88", // green for effects/defense
-  "[TURN]": "#888888", // gray for turn transitions
-  "[SUP]": "#ff6666", // red for super effective
-  "[RES]": "#66ccff", // blue for not very effective
-};
 const HP_TWEEN_DURATION = 500;
 
 const PROMPT_MAX_LENGTH = 500;
@@ -148,6 +139,11 @@ export class BattleScene extends Phaser.Scene {
   // Battle log
   private battleLogText!: Phaser.GameObjects.Text;
   private logMessages: string[] = [];
+  private logLineTexts: Phaser.GameObjects.Text[] = [];
+  private logLineColors: string[] = [];
+  private logContainer!: Phaser.GameObjects.Container;
+  private logFontSize = 12;
+  private logLineWidth = 200;
 
   // Skill buttons
   private skillButtons: Phaser.GameObjects.Container[] = [];
@@ -503,7 +499,7 @@ export class BattleScene extends Phaser.Scene {
     const logX = w * 0.03;
     const logY = h * 0.37;
     const logW = w * 0.44;
-    const logH = Math.min(h * 0.15, h - logY - 10);
+    const logH = Math.min(h * 0.20, h - logY - 10);
 
     const bg = this.add.graphics();
     bg.fillStyle(0x111111, 0.85);
@@ -511,47 +507,66 @@ export class BattleScene extends Phaser.Scene {
     bg.lineStyle(1, COLORS.panelBorder);
     bg.strokeRoundedRect(logX, logY, logW, logH, 6);
 
+    this.logContainer = this.add.container(logX + 10, logY + 6);
+
+    // Keep legacy text object for compatibility (hidden)
     this.battleLogText = this.add
-      .text(logX + 10, logY + 6, "", {
+      .text(0, 0, "", {
         fontSize: `${Math.max(10, Math.floor(w * 0.014))}px`,
         color: COLORS.accent,
         wordWrap: { width: logW - 20 },
         lineSpacing: 3,
       })
-      .setOrigin(0, 0);
+      .setOrigin(0, 0)
+      .setVisible(false);
+
+    this.logFontSize = Math.max(10, Math.floor(w * 0.014));
+    this.logLineWidth = logW - 20;
 
     // Mask to clip overflow
     const mask = this.add.graphics();
     mask.fillStyle(0xffffff);
     mask.fillRect(logX, logY, logW, logH);
-    this.battleLogText.setMask(
+    this.logContainer.setMask(
       new Phaser.Display.Masks.GeometryMask(this, mask),
     );
   }
 
   private addLogMessage(msg: string): void {
-    // Strip prefix for display, determine color
-    let displayMsg = msg;
-    let color: string = COLORS.accent;
-    for (const [prefix, c] of Object.entries(LOG_COLORS)) {
-      if (msg.startsWith(prefix)) {
-        displayMsg = msg.slice(prefix.length);
-        color = c;
-        break;
-      }
-    }
+    const { displayMsg, color } = parseLogMessage(msg);
+
     this.logMessages.push(`> ${displayMsg}`);
+    this.logLineColors.push(color);
+
     // Keep last N lines for auto-scroll
     if (this.logMessages.length > LOG_MAX_LINES) {
       this.logMessages.shift();
+      this.logLineColors.shift();
     }
-    this.battleLogText.setText(this.logMessages.join("\n"));
-    this.battleLogText.setColor(color);
+
+    // Rebuild per-line Text objects
+    for (const t of this.logLineTexts) {
+      t.destroy();
+    }
+    this.logLineTexts = [];
+
+    const lineHeight = this.logFontSize + 5;
+    for (let i = 0; i < this.logMessages.length; i++) {
+      const lineText = this.add
+        .text(0, i * lineHeight, this.logMessages[i], {
+          fontSize: `${this.logFontSize}px`,
+          color: this.logLineColors[i],
+          wordWrap: { width: this.logLineWidth },
+        })
+        .setOrigin(0, 0);
+      this.logContainer.add(lineText);
+      this.logLineTexts.push(lineText);
+    }
 
     // Flash highlight for new message
-    this.battleLogText.setAlpha(0.5);
+    this.logContainer.setAlpha(0.5);
     this.tweens.add({
-      targets: this.battleLogText,
+      targets: this.logContainer,
       alpha: 1,
       duration: 300,
       ease: "Linear",

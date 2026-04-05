@@ -84,6 +84,28 @@ describe("ASSET_REGISTRY", () => {
     it("should have null for electric type (no portrait yet)", () => {
       assert.equal(ASSET_REGISTRY.portraits[MechType.Electric], null);
     });
+
+    it("fire portrait paths should reference fire-prefixed files", () => {
+      const states = ASSET_REGISTRY.portraits[MechType.Fire];
+      assert.ok(states);
+      for (const [state, entry] of Object.entries(states)) {
+        assert.ok(
+          (entry as AssetEntry).path.includes(`fire-${state}`),
+          `fire-${state} path should contain "fire-${state}", got: ${(entry as AssetEntry).path}`,
+        );
+      }
+    });
+
+    it("water portrait paths should reference water-prefixed files", () => {
+      const states = ASSET_REGISTRY.portraits[MechType.Water];
+      assert.ok(states);
+      for (const [state, entry] of Object.entries(states)) {
+        assert.ok(
+          (entry as AssetEntry).path.includes(`water-${state}`),
+          `water-${state} path should contain "water-${state}", got: ${(entry as AssetEntry).path}`,
+        );
+      }
+    });
   });
 
   describe("backgrounds", () => {

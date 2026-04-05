@@ -15,9 +15,9 @@ import fireMechPng from "./mechs/fire-mech.png";
 import waterMechPng from "./mechs/water-mech.png";
 
 // Portrait PNGs (64x64) — indexed by MechType
-import fireAngryPng from "./portraits/player-angry.png";
-import fireDefeatedPng from "./portraits/player-defeated.png";
-import fireNormalPng from "./portraits/player-normal.png";
+import fireAngryPng from "./portraits/fire-angry.png";
+import fireDefeatedPng from "./portraits/fire-defeated.png";
+import fireNormalPng from "./portraits/fire-normal.png";
 import waterAngryPng from "./portraits/water-angry.png";
 import waterDefeatedPng from "./portraits/water-defeated.png";
 import waterNormalPng from "./portraits/water-normal.png";
