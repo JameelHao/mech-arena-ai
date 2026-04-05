@@ -6,7 +6,10 @@ const ASSET_EXTS = /\.(png|jpg|jpeg|gif|svg|webp|ico)$/;
 
 export function resolve(specifier, context, nextResolve) {
   if (ASSET_EXTS.test(specifier)) {
-    return { shortCircuit: true, url: new URL(specifier, context.parentURL).href };
+    return {
+      shortCircuit: true,
+      url: new URL(specifier, context.parentURL).href,
+    };
   }
   return nextResolve(specifier, context);
 }
