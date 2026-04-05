@@ -25,6 +25,13 @@ import {
   computeBackgroundLayout,
 } from "../utils/backgroundConfig";
 import {
+  PROMPT_LAYOUT,
+  buildContainerStyle,
+  buildInstallBannerStyle,
+  buildSaveButtonStyle,
+  buildTextareaStyle,
+} from "../utils/promptLayout";
+import {
   isOnline,
   onOnlineChange,
   onUpdateAvailable,
@@ -566,15 +573,13 @@ export class BattleScene extends Phaser.Scene {
     }
 
     const container = document.createElement("div");
-    container.style.cssText =
-      "position:fixed;bottom:8px;left:8px;z-index:100;display:flex;flex-direction:column;gap:4px;width:220px;";
+    container.style.cssText = buildContainerStyle(PROMPT_LAYOUT.container);
 
     const textarea = document.createElement("textarea");
     textarea.maxLength = PROMPT_MAX_LENGTH;
     textarea.placeholder = PROMPT_PLACEHOLDER;
     textarea.value = this.mechPrompt;
-    textarea.style.cssText =
-      "width:100%;height:60px;background:#222;color:#0f8;border:1px solid #444;border-radius:6px;padding:6px;font-size:12px;resize:none;font-family:monospace;";
+    textarea.style.cssText = buildTextareaStyle(PROMPT_LAYOUT.textarea);
 
     const row = document.createElement("div");
     row.style.cssText =
@@ -586,8 +591,7 @@ export class BattleScene extends Phaser.Scene {
 
     const saveBtn = document.createElement("button");
     saveBtn.textContent = "Save";
-    saveBtn.style.cssText =
-      "background:#0f8;color:#000;border:none;border-radius:4px;padding:4px 12px;font-size:12px;font-weight:bold;cursor:pointer;font-family:monospace;";
+    saveBtn.style.cssText = buildSaveButtonStyle(PROMPT_LAYOUT.saveButton);
 
     textarea.addEventListener("input", () => {
       this.mechPrompt = textarea.value;
@@ -687,8 +691,7 @@ export class BattleScene extends Phaser.Scene {
   private showInstallBanner(): void {
     if (this.installBanner) return;
     const banner = document.createElement("div");
-    banner.style.cssText =
-      "position:fixed;bottom:80px;left:8px;background:#2a2a2a;color:#0f8;border:1px solid #444;border-radius:8px;padding:10px 14px;font-size:13px;font-family:monospace;z-index:200;display:flex;align-items:center;gap:10px;max-width:280px;";
+    banner.style.cssText = buildInstallBannerStyle(PROMPT_LAYOUT.installBanner);
     const text = document.createElement("span");
     text.textContent = "Install Mech Arena AI?";
     const btn = document.createElement("button");
