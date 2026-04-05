@@ -4,8 +4,7 @@
 
 import Phaser from "phaser";
 import { callBattleAPI } from "../api/battleClient";
-import battleBgPng from "../assets/backgrounds/battle-bg-city.png";
-import battleGroundPng from "../assets/backgrounds/battle-ground.png";
+import { ASSET_REGISTRY } from "../assets";
 import { type Mech, MechType, TurnPhase } from "../types/game";
 import type { BattleRecord } from "../types/storage";
 import { BattleManager } from "../utils/BattleManager";
@@ -19,7 +18,7 @@ import {
   playHitReaction,
   playMechAttack,
   playMechDamageFlash,
-  preloadMechSVGs,
+  preloadMechAssets,
 } from "../utils/MechGraphics";
 import {
   BATTLE_BG_TINT,
@@ -168,10 +167,7 @@ export class BattleScene extends Phaser.Scene {
       console.error("[BattleScene] Failed to load asset:", file.key, file.url);
     });
 
-    preloadMechSVGs(this);
-
-    this.load.image("battle-bg", battleBgPng);
-    this.load.image("battle-ground", battleGroundPng);
+    preloadMechAssets(this);
 
     this.load.on("complete", () => {
       console.log("[BattleScene] preload complete");
@@ -227,7 +223,11 @@ export class BattleScene extends Phaser.Scene {
     const layout = computeBackgroundLayout(w, h);
 
     // Full-screen background image, darkened for UI readability
-    this.bgImage = this.add.image(layout.bgX, layout.bgY, "battle-bg");
+    this.bgImage = this.add.image(
+      layout.bgX,
+      layout.bgY,
+      ASSET_REGISTRY.backgrounds.city.key,
+    );
     this.bgImage.setDisplaySize(layout.bgW, layout.bgH);
     this.bgImage.setOrigin(0.5);
     this.bgImage.setTint(BATTLE_BG_TINT);
@@ -238,7 +238,7 @@ export class BattleScene extends Phaser.Scene {
       layout.groundY,
       layout.groundW,
       layout.groundH,
-      "battle-ground",
+      ASSET_REGISTRY.backgrounds.ground.key,
     );
     this.groundImage.setOrigin(0.5);
   }
