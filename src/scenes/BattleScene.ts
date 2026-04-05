@@ -13,6 +13,8 @@ import {
   type PortraitState,
   createMechSprite,
   getPortraitState,
+  playAttackProjectile,
+  playHitReaction,
   playMechAttack,
   playMechDamageFlash,
   preloadMechSVGs,
@@ -929,15 +931,26 @@ export class BattleScene extends Phaser.Scene {
     const afterPlayer = this.battleManager.executePlayerAttack(index);
     const playerLogs = afterPlayer.log.slice(prevLogLen);
 
+    const playerSkill = PLAYER_MECH.skills[index];
+
     this.setTurnIndicator(TurnPhase.PlayerTurn);
     for (const msg of playerLogs) {
       this.addLogMessage(msg);
     }
 
     await this.playAttackAnimation(true);
+    await playAttackProjectile(
+      this,
+      this.playerMechSprite,
+      this.opponentMechSprite,
+      playerSkill.type,
+    );
 
     if (afterPlayer.opponent.hp < prevOpponentHp) {
-      await this.playDamageFlash(true);
+      await Promise.all([
+        playHitReaction(this, this.opponentMechSprite, playerSkill.type),
+        this.playDamageFlash(true),
+      ]);
     }
 
     await this.animateHP(
@@ -977,15 +990,26 @@ export class BattleScene extends Phaser.Scene {
     const afterAi = this.battleManager.executeAiAttack(aiSkillIndex);
     const aiLogs = afterAi.log.slice(aiLogLen);
 
+    const aiSkill = OPPONENT_MECH.skills[aiSkillIndex];
+
     this.setTurnIndicator(TurnPhase.AiTurn);
     for (const msg of aiLogs) {
       this.addLogMessage(msg);
     }
 
     await this.playAttackAnimation(false);
+    await playAttackProjectile(
+      this,
+      this.opponentMechSprite,
+      this.playerMechSprite,
+      aiSkill.type,
+    );
 
     if (afterAi.player.hp < prevPlayerHp) {
-      await this.playDamageFlash(false);
+      await Promise.all([
+        playHitReaction(this, this.playerMechSprite, aiSkill.type),
+        this.playDamageFlash(false),
+      ]);
     }
 
     await this.animateHP(
