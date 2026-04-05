@@ -5,15 +5,15 @@ import { resolve } from "node:path";
 import { describe, it } from "node:test";
 
 const ROOT = resolve(import.meta.dirname, "..");
-const REF_PATH = resolve(ROOT, "src/assets/reference/player-portrait-source.jpg");
+const REF_PATH = resolve(
+  ROOT,
+  "src/assets/reference/player-portrait-source.jpg",
+);
 const PORTRAIT_DIR = resolve(ROOT, "src/assets/portraits");
 
 describe("player portrait source material", () => {
   it("player-portrait-source.jpg should exist in src/assets/reference/", () => {
-    assert.ok(
-      existsSync(REF_PATH),
-      `Source file missing: ${REF_PATH}`,
-    );
+    assert.ok(existsSync(REF_PATH), `Source file missing: ${REF_PATH}`);
   });
 
   it("player-portrait-source.jpg should be a valid JPEG", async () => {
@@ -29,13 +29,13 @@ describe("player portrait files", () => {
   const STATES = ["normal", "angry", "defeated"] as const;
 
   for (const state of STATES) {
-    it(`fire-${state}.png should exist`, () => {
-      const p = resolve(PORTRAIT_DIR, `fire-${state}.png`);
+    it(`player-${state}.png should exist`, () => {
+      const p = resolve(PORTRAIT_DIR, `player-${state}.png`);
       assert.ok(existsSync(p), `Missing: ${p}`);
     });
 
-    it(`fire-${state}.png should be a valid PNG`, async () => {
-      const buf = await readFile(resolve(PORTRAIT_DIR, `fire-${state}.png`));
+    it(`player-${state}.png should be a valid PNG`, async () => {
+      const buf = await readFile(resolve(PORTRAIT_DIR, `player-${state}.png`));
       // PNG files start with 0x89 P N G
       assert.ok(buf.length > 4, "file should not be empty");
       assert.equal(buf[0], 0x89, "first byte should be 0x89");
@@ -46,8 +46,12 @@ describe("player portrait files", () => {
   }
 
   it("player portraits should be distinct from enemy portraits", async () => {
-    const playerNormal = await readFile(resolve(PORTRAIT_DIR, "fire-normal.png"));
-    const enemyNormal = await readFile(resolve(PORTRAIT_DIR, "enemy-normal.png"));
+    const playerNormal = await readFile(
+      resolve(PORTRAIT_DIR, "player-normal.png"),
+    );
+    const enemyNormal = await readFile(
+      resolve(PORTRAIT_DIR, "enemy-normal.png"),
+    );
     // Files should differ (not the same red portrait)
     assert.notDeepEqual(
       playerNormal,

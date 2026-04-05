@@ -15,9 +15,10 @@ import fireMechPng from "./mechs/fire-mech.png";
 import waterMechPng from "./mechs/water-mech.png";
 
 // Portrait PNGs (64x64) — indexed by MechType
-import fireAngryPng from "./portraits/fire-angry.png";
-import fireDefeatedPng from "./portraits/fire-defeated.png";
-import fireNormalPng from "./portraits/fire-normal.png";
+// NOTE: Fire mech (player side) explicitly uses player-* portrait assets.
+import playerAngryPng from "./portraits/player-angry.png";
+import playerDefeatedPng from "./portraits/player-defeated.png";
+import playerNormalPng from "./portraits/player-normal.png";
 import waterAngryPng from "./portraits/water-angry.png";
 import waterDefeatedPng from "./portraits/water-defeated.png";
 import waterNormalPng from "./portraits/water-normal.png";
@@ -39,9 +40,9 @@ export const ASSET_REGISTRY = {
   },
   portraits: {
     [MechType.Fire]: {
-      normal: { key: "portrait-fire-normal", path: fireNormalPng },
-      angry: { key: "portrait-fire-angry", path: fireAngryPng },
-      defeated: { key: "portrait-fire-defeated", path: fireDefeatedPng },
+      normal: { key: "portrait-player-normal", path: playerNormalPng },
+      angry: { key: "portrait-player-angry", path: playerAngryPng },
+      defeated: { key: "portrait-player-defeated", path: playerDefeatedPng },
     } as Record<PortraitState, AssetEntry>,
     [MechType.Water]: {
       normal: { key: "portrait-water-normal", path: waterNormalPng },

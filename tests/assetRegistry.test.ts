@@ -64,10 +64,10 @@ describe("ASSET_REGISTRY", () => {
     });
 
     for (const state of STATES) {
-      it(`should have fire-${state} portrait entry`, () => {
+      it(`should have player-${state} portrait entry for fire mech`, () => {
         const entry = ASSET_REGISTRY.portraits[MechType.Fire]?.[state];
-        assert.ok(entry, `fire-${state} should exist`);
-        assert.equal(entry.key, `portrait-fire-${state}`);
+        assert.ok(entry, `player-${state} should exist`);
+        assert.equal(entry.key, `portrait-player-${state}`);
         assert.ok(typeof entry.path === "string" && entry.path.length > 0);
       });
     }
@@ -85,13 +85,13 @@ describe("ASSET_REGISTRY", () => {
       assert.equal(ASSET_REGISTRY.portraits[MechType.Electric], null);
     });
 
-    it("fire portrait paths should reference fire-prefixed files", () => {
+    it("fire mech portrait paths should reference player-prefixed files", () => {
       const states = ASSET_REGISTRY.portraits[MechType.Fire];
       assert.ok(states);
       for (const [state, entry] of Object.entries(states)) {
         assert.ok(
-          (entry as AssetEntry).path.includes(`fire-${state}`),
-          `fire-${state} path should contain "fire-${state}", got: ${(entry as AssetEntry).path}`,
+          (entry as AssetEntry).path.includes(`player-${state}`),
+          `player-${state} path should contain "player-${state}", got: ${(entry as AssetEntry).path}`,
         );
       }
     });
