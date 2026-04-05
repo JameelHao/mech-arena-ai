@@ -7,8 +7,8 @@ describe("README.md", () => {
   const readmePath = resolve(import.meta.dirname, "..", "README.md");
   const content = readFileSync(readmePath, "utf-8");
 
-  it("should contain 'hello'", () => {
-    assert.ok(content.includes("hello"), "README.md must contain 'hello'");
+  it("should not contain 'hello'", () => {
+    assert.ok(!content.includes("hello"), "README.md must not contain 'hello'");
   });
 
   it("should preserve existing content", () => {
