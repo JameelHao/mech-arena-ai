@@ -496,7 +496,7 @@ export class BattleScene extends Phaser.Scene {
   private addLogMessage(msg: string): void {
     // Strip prefix for display, determine color
     let displayMsg = msg;
-    let color = COLORS.accent;
+    let color: string = COLORS.accent;
     for (const [prefix, c] of Object.entries(LOG_COLORS)) {
       if (msg.startsWith(prefix)) {
         displayMsg = msg.slice(prefix.length);
