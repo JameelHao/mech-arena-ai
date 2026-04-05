@@ -15,7 +15,6 @@ import fireMechPng from "./mechs/fire-mech.png";
 import waterMechPng from "./mechs/water-mech.png";
 
 // Portrait PNGs (64x64) — indexed by MechType
-// NOTE: Fire mech (player side) explicitly uses player-* portrait assets.
 import playerAngryPng from "./portraits/player-angry.png";
 import playerDefeatedPng from "./portraits/player-defeated.png";
 import playerNormalPng from "./portraits/player-normal.png";

@@ -45,18 +45,19 @@ describe("player portrait files", () => {
     });
   }
 
-  it("player portraits should be distinct from enemy portraits", async () => {
-    const playerNormal = await readFile(
-      resolve(PORTRAIT_DIR, "player-normal.png"),
-    );
-    const enemyNormal = await readFile(
-      resolve(PORTRAIT_DIR, "enemy-normal.png"),
-    );
-    // Files should differ (not the same red portrait)
-    assert.notDeepEqual(
-      playerNormal,
-      enemyNormal,
-      "Player portrait must be visually distinct from enemy portrait (files should differ)",
-    );
+  it("player portraits should be distinct from water portraits", async () => {
+    for (const state of STATES) {
+      const playerBuf = await readFile(
+        resolve(PORTRAIT_DIR, `player-${state}.png`),
+      );
+      const waterBuf = await readFile(
+        resolve(PORTRAIT_DIR, `water-${state}.png`),
+      );
+      assert.notDeepEqual(
+        playerBuf,
+        waterBuf,
+        `player-${state} must differ from water-${state}`,
+      );
+    }
   });
 });

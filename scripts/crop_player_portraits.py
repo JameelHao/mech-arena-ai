@@ -90,19 +90,19 @@ def main():
     head = crop_head(mech)
 
     # Normal
-    normal_path = PORTRAIT_DIR / "fire-normal.png"
+    normal_path = PORTRAIT_DIR / "player-normal.png"
     head.save(normal_path)
     print(f"Saved: {normal_path}")
 
     # Angry
     angry = make_angry(head)
-    angry_path = PORTRAIT_DIR / "fire-angry.png"
+    angry_path = PORTRAIT_DIR / "player-angry.png"
     angry.save(angry_path)
     print(f"Saved: {angry_path}")
 
     # Defeated
     defeated = make_defeated(head)
-    defeated_path = PORTRAIT_DIR / "fire-defeated.png"
+    defeated_path = PORTRAIT_DIR / "player-defeated.png"
     defeated.save(defeated_path)
     print(f"Saved: {defeated_path}")
 
