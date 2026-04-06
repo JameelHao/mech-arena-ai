@@ -599,13 +599,16 @@ export class BattleScene extends Phaser.Scene {
 
   private showSpinner(): void {
     let i = 0;
+    const label = this.mechPrompt.trim()
+      ? "Analyzing strategy..."
+      : "AI Thinking...";
     this.spinnerText.setVisible(true);
     this.spinnerTimer = this.time.addEvent({
       delay: 80,
       loop: true,
       callback: () => {
         this.spinnerText.setText(
-          `${SPINNER_FRAMES[i]} AI Thinking... ${SPINNER_FRAMES[i]}`,
+          `${SPINNER_FRAMES[i]} ${label} ${SPINNER_FRAMES[i]}`,
         );
         i = (i + 1) % SPINNER_FRAMES.length;
       },
@@ -664,7 +667,20 @@ export class BattleScene extends Phaser.Scene {
       }, 1000);
     });
 
+    const indicator = document.createElement("span");
+    indicator.style.cssText =
+      "color:#0f8;font-size:11px;font-family:monospace;display:none;";
+    indicator.textContent = "\u26A1 Strategy Active";
+    if (this.mechPrompt.trim()) {
+      indicator.style.display = "inline";
+    }
+
+    saveBtn.addEventListener("click", () => {
+      indicator.style.display = this.mechPrompt.trim() ? "inline" : "none";
+    });
+
     row.appendChild(counter);
+    row.appendChild(indicator);
     row.appendChild(saveBtn);
     container.appendChild(textarea);
     container.appendChild(row);
@@ -1118,12 +1134,14 @@ export class BattleScene extends Phaser.Scene {
     this.showSpinner();
 
     let aiSkillIndex: number;
+    let aiReasoning: string | undefined;
     if (this.mechPrompt.trim() && isOnline()) {
       const apiResult = await callBattleAPI(
         this.mechPrompt,
         this.battleManager.getState(),
       );
       aiSkillIndex = apiResult?.move ?? this.battleManager.getRandomAiSkill();
+      aiReasoning = apiResult?.reasoning;
     } else {
       aiSkillIndex = this.battleManager.getRandomAiSkill();
     }
@@ -1141,6 +1159,13 @@ export class BattleScene extends Phaser.Scene {
     this.setTurnIndicator(TurnPhase.AiTurn);
     for (const msg of aiLogs) {
       this.addLogMessage(msg);
+    }
+    if (aiReasoning) {
+      const truncated =
+        aiReasoning.length > 60
+          ? `${aiReasoning.slice(0, 57)}...`
+          : aiReasoning;
+      this.addLogMessage(`[EFF]AI: ${truncated}`);
     }
 
     await showSkillName(
