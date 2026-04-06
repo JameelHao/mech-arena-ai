@@ -8,6 +8,7 @@ import { ASSET_REGISTRY } from "../assets";
 import { type Mech, MechType, TurnPhase } from "../types/game";
 import type { BattleRecord } from "../types/storage";
 import { BattleManager } from "../utils/BattleManager";
+import { getEffectiveness } from "../utils/BattleManager";
 import {
   type MechSprite,
   PORTRAIT_TEXTURE_KEYS,
@@ -20,6 +21,7 @@ import {
   playMechDamageFlash,
   preloadMechAssets,
   showDamageNumber,
+  showEffectivenessLabel,
   showSkillName,
 } from "../utils/MechGraphics";
 import {
@@ -846,19 +848,33 @@ export class BattleScene extends Phaser.Scene {
         })
         .setOrigin(0.5);
 
+      // Effectiveness hint for attack skills
+      let infoLabel: string;
+      let infoColor = "#999999";
+      if (skill.damage > 0 && skill.type !== "defense") {
+        const eff = getEffectiveness(
+          skill.type as MechType,
+          OPPONENT_MECH.type,
+        );
+        if (eff > 1) {
+          infoLabel = `${skill.type.toUpperCase()} · ${skill.damage} DMG  \u25B2 1.5x`;
+          infoColor = COLORS.accent;
+        } else if (eff < 1) {
+          infoLabel = `${skill.type.toUpperCase()} · ${skill.damage} DMG  \u25BC 0.5x`;
+          infoColor = "#ff6666";
+        } else {
+          infoLabel = `${skill.type.toUpperCase()} · ${skill.damage} DMG`;
+        }
+      } else {
+        infoLabel = "BUFF · DEF +50%";
+      }
+
       const infoText = this.add
-        .text(
-          btnW / 2,
-          btnH * 0.68,
-          skill.damage > 0
-            ? `${skill.type.toUpperCase()} · ${skill.damage} DMG`
-            : "BUFF · DEF +50%",
-          {
-            fontSize: `${subFontSize}px`,
-            color: "#999999",
-            align: "center",
-          },
-        )
+        .text(btnW / 2, btnH * 0.68, infoLabel, {
+          fontSize: `${subFontSize}px`,
+          color: infoColor,
+          align: "center",
+        })
         .setOrigin(0.5);
 
       container.add([bg, nameText, infoText]);
@@ -1103,6 +1119,9 @@ export class BattleScene extends Phaser.Scene {
           ? "resist"
           : "normal";
       showDamageNumber(this, this.opponentMechSprite, playerDmg, eff);
+      if (eff !== "normal") {
+        showEffectivenessLabel(this, this.opponentMechSprite, eff);
+      }
       await Promise.all([
         playHitReaction(this, this.opponentMechSprite, playerSkill.type),
         this.playDamageFlash(true),
@@ -1189,6 +1208,9 @@ export class BattleScene extends Phaser.Scene {
           ? "resist"
           : "normal";
       showDamageNumber(this, this.playerMechSprite, aiDmg, eff);
+      if (eff !== "normal") {
+        showEffectivenessLabel(this, this.playerMechSprite, eff);
+      }
       await Promise.all([
         playHitReaction(this, this.playerMechSprite, aiSkill.type),
         this.playDamageFlash(false),

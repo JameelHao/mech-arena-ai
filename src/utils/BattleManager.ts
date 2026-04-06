@@ -9,14 +9,28 @@ import {
 } from "../types/game";
 
 // Type effectiveness: Fire > Electric > Water > Fire (1.5x super, 0.5x weak)
-const EFFECTIVENESS: Record<MechType, { strong: MechType; weak: MechType }> = {
+export const EFFECTIVENESS: Record<
+  MechType,
+  { strong: MechType; weak: MechType }
+> = {
   [MechType.Fire]: { strong: MechType.Electric, weak: MechType.Water },
   [MechType.Water]: { strong: MechType.Fire, weak: MechType.Electric },
   [MechType.Electric]: { strong: MechType.Water, weak: MechType.Fire },
 };
 
-const SUPER_EFFECTIVE_MULTIPLIER = 1.5;
-const NOT_EFFECTIVE_MULTIPLIER = 0.5;
+export const SUPER_EFFECTIVE_MULTIPLIER = 1.5;
+export const NOT_EFFECTIVE_MULTIPLIER = 0.5;
+
+/** Get effectiveness multiplier for an attack type vs a defender type */
+export function getEffectiveness(
+  attackType: MechType,
+  defenderType: MechType,
+): number {
+  const info = EFFECTIVENESS[attackType];
+  if (info.strong === defenderType) return SUPER_EFFECTIVE_MULTIPLIER;
+  if (info.weak === defenderType) return NOT_EFFECTIVE_MULTIPLIER;
+  return 1;
+}
 
 export class BattleManager {
   private state: BattleState;
@@ -128,10 +142,7 @@ export class BattleManager {
 
   /** Check type effectiveness multiplier */
   checkTypeEffectiveness(attackType: MechType, defenderType: MechType): number {
-    const info = EFFECTIVENESS[attackType];
-    if (info.strong === defenderType) return SUPER_EFFECTIVE_MULTIPLIER;
-    if (info.weak === defenderType) return NOT_EFFECTIVE_MULTIPLIER;
-    return 1;
+    return getEffectiveness(attackType, defenderType);
   }
 
   /** Apply damage to target mech */
