@@ -341,11 +341,16 @@ export class BattleScene extends Phaser.Scene {
     const textOffsetX = showPortrait ? portraitSize + 12 : 10;
 
     this.add
-      .text(panelX + textOffsetX, panelY + 6, "Enemy Mech  Lv.5", {
-        fontSize: `${Math.max(11, Math.floor(w * 0.018))}px`,
-        color: COLORS.text,
-        fontStyle: "bold",
-      })
+      .text(
+        panelX + textOffsetX,
+        panelY + 6,
+        `${OPPONENT_MECH.codename ?? OPPONENT_MECH.name}  Lv.5`,
+        {
+          fontSize: `${Math.max(11, Math.floor(w * 0.018))}px`,
+          color: COLORS.text,
+          fontStyle: "bold",
+        },
+      )
       .setOrigin(0, 0);
 
     // HP bar
@@ -425,11 +430,16 @@ export class BattleScene extends Phaser.Scene {
     }
 
     this.add
-      .text(panelX + 10, panelY + 6, "Your Mech  Lv.5", {
-        fontSize: `${Math.max(11, Math.floor(w * 0.018))}px`,
-        color: COLORS.text,
-        fontStyle: "bold",
-      })
+      .text(
+        panelX + 10,
+        panelY + 6,
+        `${PLAYER_MECH.codename ?? PLAYER_MECH.name}  Lv.5`,
+        {
+          fontSize: `${Math.max(11, Math.floor(w * 0.018))}px`,
+          color: COLORS.text,
+          fontStyle: "bold",
+        },
+      )
       .setOrigin(0, 0);
 
     // HP bar
