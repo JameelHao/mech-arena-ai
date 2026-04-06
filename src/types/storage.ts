@@ -11,6 +11,7 @@ export interface BattleRecord {
   turns: number;
   playerHpLeft: number;
   opponentHpLeft: number;
+  prompt?: string;
 }
 
 export interface GameSettings {

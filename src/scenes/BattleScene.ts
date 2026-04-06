@@ -1288,6 +1288,7 @@ export class BattleScene extends Phaser.Scene {
       turns: state.turnCount,
       playerHpLeft: state.player.hp,
       opponentHpLeft: state.opponent.hp,
+      prompt: this.mechPrompt.trim() || undefined,
     };
     saveBattleHistory(record);
   }
