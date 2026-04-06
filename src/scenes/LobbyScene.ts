@@ -7,6 +7,7 @@ import { ASSET_REGISTRY, preloadAllAssets } from "../assets";
 import { MECH_ROSTER, OPPONENT_MECH } from "../data/mechs";
 import { STRATEGY_TEMPLATES } from "../data/strategies";
 import {
+  clearStarterMech,
   hasSeenOnboarding,
   hasStarterMech,
   loadMechPrompt,
@@ -435,6 +436,34 @@ export class LobbyScene extends Phaser.Scene {
 
     helpZone.on("pointerdown", () => {
       this.showOnboarding();
+    });
+
+    // Reset button
+    const resetX = helpX - helpSize - 8;
+    const resetText = this.add
+      .text(resetX + helpSize / 2, helpY + helpSize / 2, "\u21BA", {
+        fontSize: `${Math.max(14, Math.floor(w * 0.02))}px`,
+        color: "#666666",
+      })
+      .setOrigin(0.5);
+
+    const resetBg = this.add.graphics();
+    resetBg.fillStyle(COLORS.buttonBg, 1);
+    resetBg.fillRoundedRect(resetX, helpY, helpSize, helpSize, 6);
+    resetBg.lineStyle(1, COLORS.panelBorder);
+    resetBg.strokeRoundedRect(resetX, helpY, helpSize, helpSize, 6);
+
+    // Ensure text is above background
+    resetText.setDepth(1);
+
+    const resetZone = this.add
+      .zone(resetX, helpY, helpSize, helpSize)
+      .setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+
+    resetZone.on("pointerdown", () => {
+      clearStarterMech();
+      this.scene.restart();
     });
   }
 

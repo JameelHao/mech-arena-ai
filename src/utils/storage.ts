@@ -231,3 +231,8 @@ export function loadStarterMech(): number {
 export function saveStarterMech(index: number): void {
   localStorage.setItem(STARTER_MECH_KEY, String(index));
 }
+
+export function clearStarterMech(): void {
+  localStorage.removeItem(STARTER_MECH_KEY);
+  localStorage.removeItem(ONBOARDING_KEY);
+}
