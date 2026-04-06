@@ -31,7 +31,12 @@ function makeGameState(overrides?: Partial<BattleState>): BattleState {
       ],
     },
     phase: TurnPhase.AiThinking,
-    log: ["Battle Start!", "PlayerMech used Fire Blast!"],
+    log: [
+      "[TURN]--- Battle Start ---",
+      "[EFF]PlayerMech vs EnemyMech",
+      "Choose your attack!",
+      "PlayerMech used Fire Blast!",
+    ],
     turnCount: 1,
     winner: null,
     ...overrides,
@@ -132,7 +137,9 @@ describe("callBattleAPI", () => {
 
     const state = makeGameState({
       log: [
-        "Battle Start!",
+        "[TURN]--- Battle Start ---",
+        "[EFF]PlayerMech vs EnemyMech",
+        "Choose your attack!",
         "PlayerMech used Fire Blast!",
         "It's not very effective...",
         "EnemyMech used Water Cannon!",
