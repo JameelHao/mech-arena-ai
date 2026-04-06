@@ -46,9 +46,22 @@ import {
   triggerInstallPrompt,
 } from "../utils/pwa";
 import {
+  initSound,
+  isMuted,
+  playAttackSound,
+  playClickSound,
+  playDefeatSound,
+  playHitSound,
+  playVictorySound,
+  resumeSound,
+  setMuted,
+} from "../utils/soundManager";
+import {
   loadMechPrompt,
+  loadSettings,
   saveBattleHistory,
   saveMechPrompt,
+  saveSettings,
 } from "../utils/storage";
 
 const COLORS = {
@@ -209,6 +222,12 @@ export class BattleScene extends Phaser.Scene {
     // Load saved prompt
     this.mechPrompt = loadMechPrompt();
 
+    // Init sound
+    initSound();
+    const settings = loadSettings();
+    setMuted(!settings.soundEnabled);
+    this.input.once("pointerdown", () => resumeSound());
+
     const { width, height } = this.scale;
     this.buildUI(width, height);
     this.createPromptUI();
@@ -235,6 +254,7 @@ export class BattleScene extends Phaser.Scene {
     this.createSkillButtons(w, h);
     this.createSpinner(w, h);
     this.createHistoryButton(w, h);
+    this.createSoundToggle(w, h);
   }
 
   // --- Background layers ---
@@ -1080,6 +1100,7 @@ export class BattleScene extends Phaser.Scene {
     if (this.isAnimating) return;
     const state = this.battleManager.getState();
     if (state.phase !== TurnPhase.PlayerTurn) return;
+    playClickSound();
 
     this.isAnimating = true;
     this.setButtonsEnabled(false);
@@ -1104,6 +1125,9 @@ export class BattleScene extends Phaser.Scene {
       SKILL_COLORS[playerSkill.type] ?? COLORS.accent,
     );
     await this.playAttackAnimation(true);
+    playAttackSound(
+      playerSkill.type as "fire" | "water" | "electric" | "defense",
+    );
     await playAttackProjectile(
       this,
       this.playerMechSprite,
@@ -1118,6 +1142,7 @@ export class BattleScene extends Phaser.Scene {
         : playerLogs.some((m: string) => m.startsWith("[RES]"))
           ? "resist"
           : "normal";
+      playHitSound();
       showDamageNumber(this, this.opponentMechSprite, playerDmg, eff);
       if (eff !== "normal") {
         showEffectivenessLabel(this, this.opponentMechSprite, eff);
@@ -1193,6 +1218,7 @@ export class BattleScene extends Phaser.Scene {
       SKILL_COLORS[aiSkill.type] ?? COLORS.accent,
     );
     await this.playAttackAnimation(false);
+    playAttackSound(aiSkill.type as "fire" | "water" | "electric" | "defense");
     await playAttackProjectile(
       this,
       this.opponentMechSprite,
@@ -1207,6 +1233,7 @@ export class BattleScene extends Phaser.Scene {
         : aiLogs.some((m: string) => m.startsWith("[RES]"))
           ? "resist"
           : "normal";
+      playHitSound();
       showDamageNumber(this, this.playerMechSprite, aiDmg, eff);
       if (eff !== "normal") {
         showEffectivenessLabel(this, this.playerMechSprite, eff);
@@ -1297,6 +1324,46 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
+  // --- Sound toggle button ---
+
+  private createSoundToggle(w: number, h: number): void {
+    const btnSize = 28;
+    const histBtnW = Math.min(w * 0.15, 100);
+    const btnX = w - histBtnW - w * 0.03 - btnSize - 8;
+    const btnY = h * 0.03;
+
+    const bg = this.add.graphics();
+    const label = this.add
+      .text(btnX + btnSize / 2, btnY + btnSize / 2, "", {
+        fontSize: `${Math.max(14, Math.floor(w * 0.02))}px`,
+      })
+      .setOrigin(0.5);
+
+    const updateVisual = () => {
+      bg.clear();
+      bg.fillStyle(COLORS.buttonBg);
+      bg.fillRoundedRect(btnX, btnY, btnSize, btnSize, 6);
+      bg.lineStyle(1, COLORS.panelBorder);
+      bg.strokeRoundedRect(btnX, btnY, btnSize, btnSize, 6);
+      label.setText(isMuted() ? "\uD83D\uDD07" : "\uD83D\uDD0A");
+    };
+    updateVisual();
+
+    const zone = this.add
+      .zone(btnX, btnY, btnSize, btnSize)
+      .setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+
+    zone.on("pointerdown", () => {
+      resumeSound();
+      setMuted(!isMuted());
+      const s = loadSettings();
+      s.soundEnabled = !isMuted();
+      saveSettings(s);
+      updateVisual();
+    });
+  }
+
   // --- Save battle record ---
 
   private saveBattleRecord(won: boolean): void {
@@ -1317,6 +1384,8 @@ export class BattleScene extends Phaser.Scene {
   // --- Result screen ---
 
   private showResultScreen(won: boolean): void {
+    if (won) playVictorySound();
+    else playDefeatSound();
     this.saveBattleRecord(won);
     const state = this.battleManager.getState();
     const { width: w, height: h } = this.scale;
