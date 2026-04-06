@@ -4,6 +4,7 @@
 
 import Phaser from "phaser";
 import type { BattleRecord } from "../types/storage";
+import { parseLogMessage } from "../utils/logColors";
 import { loadBattleHistory } from "../utils/storage";
 
 const COLORS = {
@@ -490,6 +491,47 @@ export class HistoryScene extends Phaser.Scene {
         .setOrigin(0.5, 0),
     );
 
+    // View Replay button (only if battleLog exists)
+    if (record.battleLog && record.battleLog.length > 0) {
+      const replayBtnW = Math.min(panelW * 0.5, 150);
+      const replayBtnH = 32;
+      const replayBtnX = cx - replayBtnW / 2;
+      const replayBtnY = panelY + panelH - 36 - 15 - replayBtnH - 10;
+
+      const replayBg = this.add.graphics();
+      replayBg.fillStyle(COLORS.accentHex, 1);
+      replayBg.fillRoundedRect(
+        replayBtnX,
+        replayBtnY,
+        replayBtnW,
+        replayBtnH,
+        6,
+      );
+      this.detailOverlay.add(replayBg);
+
+      this.detailOverlay.add(
+        this.add
+          .text(cx, replayBtnY + replayBtnH / 2, "View Replay", {
+            fontSize: `${Math.max(12, Math.floor(w * 0.018))}px`,
+            color: "#000000",
+            fontStyle: "bold",
+          })
+          .setOrigin(0.5),
+      );
+
+      const replayZone = this.add
+        .zone(replayBtnX, replayBtnY, replayBtnW, replayBtnH)
+        .setOrigin(0)
+        .setInteractive({ useHandCursor: true });
+
+      replayZone.on("pointerdown", () => {
+        this.detailOverlay?.destroy();
+        this.detailOverlay = undefined;
+        this.showReplayPanel(record);
+      });
+      this.detailOverlay.add(replayZone);
+    }
+
     // Close button
     const closeBtnW = Math.min(panelW * 0.4, 120);
     const closeBtnH = 36;
@@ -533,6 +575,155 @@ export class HistoryScene extends Phaser.Scene {
       this.detailOverlay = undefined;
     });
     this.detailOverlay.addAt(backdropZone, 1);
+
+    // Fade in
+    this.detailOverlay.setAlpha(0);
+    this.tweens.add({
+      targets: this.detailOverlay,
+      alpha: 1,
+      duration: 200,
+      ease: "Power2",
+    });
+  }
+
+  private showReplayPanel(record: BattleRecord): void {
+    if (this.detailOverlay) {
+      this.detailOverlay.destroy();
+    }
+
+    const { width: w, height: h } = this.scale;
+    this.detailOverlay = this.add.container(0, 0);
+
+    // Dark backdrop
+    const backdrop = this.add.graphics();
+    backdrop.fillStyle(0x000000, 0.85);
+    backdrop.fillRect(0, 0, w, h);
+    this.detailOverlay.add(backdrop);
+
+    // Panel
+    const panelW = Math.min(w * 0.9, 500);
+    const panelH = h * 0.85;
+    const panelX = (w - panelW) / 2;
+    const panelY = (h - panelH) / 2;
+
+    const panel = this.add.graphics();
+    panel.fillStyle(0x1a1a2e, 1);
+    panel.fillRoundedRect(panelX, panelY, panelW, panelH, 10);
+    panel.lineStyle(2, 0x555555);
+    panel.strokeRoundedRect(panelX, panelY, panelW, panelH, 10);
+    this.detailOverlay.add(panel);
+
+    const cx = w / 2;
+    const titleFontSize = `${Math.max(16, Math.floor(w * 0.025))}px`;
+    const logFontSize = Math.max(11, Math.floor(w * 0.015));
+
+    // Title
+    const resultLabel =
+      record.result === "win" ? "VICTORY REPLAY" : "DEFEAT REPLAY";
+    const resultColor = record.result === "win" ? COLORS.win : COLORS.loss;
+    this.detailOverlay.add(
+      this.add
+        .text(cx, panelY + 15, resultLabel, {
+          fontSize: titleFontSize,
+          color: resultColor,
+          fontStyle: "bold",
+        })
+        .setOrigin(0.5, 0),
+    );
+
+    // Log container with mask for scrolling
+    const logX = panelX + 15;
+    const logY = panelY + 45;
+    const logW = panelW - 30;
+    const logH = panelH - 100;
+    const lineH = logFontSize + 5;
+
+    const logContainer = this.add.container(logX, logY);
+    this.detailOverlay.add(logContainer);
+
+    // Render log lines
+    const logs = record.battleLog ?? [];
+    for (let i = 0; i < logs.length; i++) {
+      const { displayMsg, color } = parseLogMessage(logs[i]);
+      const isTurnHeader = logs[i].startsWith("[TURN]");
+      const isKeyEvent =
+        logs[i].includes("wins") ||
+        logs[i].includes("defeated") ||
+        logs[i].startsWith("[SUP]");
+
+      logContainer.add(
+        this.add.text(
+          0,
+          i * lineH,
+          `${isTurnHeader ? "" : "  "}${displayMsg}`,
+          {
+            fontSize: `${logFontSize}px`,
+            color: isKeyEvent ? "#ffdd44" : color,
+            fontStyle: isTurnHeader || isKeyEvent ? "bold" : "normal",
+            wordWrap: { width: logW },
+          },
+        ),
+      );
+    }
+
+    // Mask to clip overflow
+    const maskGfx = this.add.graphics();
+    maskGfx.fillStyle(0xffffff);
+    maskGfx.fillRect(logX, logY, logW, logH);
+    logContainer.setMask(new Phaser.Display.Masks.GeometryMask(this, maskGfx));
+
+    // Scroll via drag
+    const totalLogH = logs.length * lineH;
+    const maxScrollY = Math.max(0, totalLogH - logH);
+    let scrollOffset = 0;
+
+    const scrollZone = this.add
+      .zone(logX, logY, logW, logH)
+      .setOrigin(0)
+      .setInteractive();
+
+    scrollZone.on("pointermove", (pointer: Phaser.Input.Pointer) => {
+      if (!pointer.isDown) return;
+      scrollOffset = Math.max(
+        0,
+        Math.min(maxScrollY, scrollOffset - pointer.velocity.y * 0.3),
+      );
+      logContainer.y = logY - scrollOffset;
+    });
+    this.detailOverlay.add(scrollZone);
+
+    // Close button
+    const closeBtnW = Math.min(panelW * 0.35, 120);
+    const closeBtnH = 34;
+    const closeBtnX = cx - closeBtnW / 2;
+    const closeBtnY = panelY + panelH - closeBtnH - 12;
+
+    const closeBg = this.add.graphics();
+    closeBg.fillStyle(COLORS.buttonBg, 1);
+    closeBg.fillRoundedRect(closeBtnX, closeBtnY, closeBtnW, closeBtnH, 6);
+    closeBg.lineStyle(1, COLORS.panelBorder);
+    closeBg.strokeRoundedRect(closeBtnX, closeBtnY, closeBtnW, closeBtnH, 6);
+    this.detailOverlay.add(closeBg);
+
+    this.detailOverlay.add(
+      this.add
+        .text(cx, closeBtnY + closeBtnH / 2, "Close", {
+          fontSize: `${Math.max(13, Math.floor(w * 0.02))}px`,
+          color: COLORS.text,
+        })
+        .setOrigin(0.5),
+    );
+
+    const closeZone = this.add
+      .zone(closeBtnX, closeBtnY, closeBtnW, closeBtnH)
+      .setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+
+    closeZone.on("pointerdown", () => {
+      this.detailOverlay?.destroy();
+      this.detailOverlay = undefined;
+    });
+    this.detailOverlay.add(closeZone);
 
     // Fade in
     this.detailOverlay.setAlpha(0);
