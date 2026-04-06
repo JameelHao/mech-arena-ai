@@ -110,8 +110,14 @@ describe("player portrait files", () => {
     // Crop region must be within source image bounds (256x256)
     assert.ok(x0 >= 0 && x0 < 256, `x0=${x0} out of bounds`);
     assert.ok(y0 >= 0 && y0 < 256, `y0=${y0} out of bounds`);
-    assert.ok(x1 > x0 && x1 <= 256, `x1=${x1} invalid (must be > x0 and <= 256)`);
-    assert.ok(y1 > y0 && y1 <= 256, `y1=${y1} invalid (must be > y0 and <= 256)`);
+    assert.ok(
+      x1 > x0 && x1 <= 256,
+      `x1=${x1} invalid (must be > x0 and <= 256)`,
+    );
+    assert.ok(
+      y1 > y0 && y1 <= 256,
+      `y1=${y1} invalid (must be > y0 and <= 256)`,
+    );
     // Crop should be a reasonable portrait-sized sub-region, not the entire image
     const cropW = x1 - x0;
     const cropH = y1 - y0;
