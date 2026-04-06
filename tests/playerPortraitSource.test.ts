@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -22,6 +23,18 @@ describe("player portrait source material", () => {
     assert.ok(buf.length > 2, "file should not be empty");
     assert.equal(buf[0], 0xff, "first byte should be 0xFF");
     assert.equal(buf[1], 0xd8, "second byte should be 0xD8");
+  });
+
+  it("player-portrait-source.jpg SHA256 should match pinned hash", async () => {
+    const PINNED_SHA256 =
+      "a7edb06365c3699dab470dda99acd36f722835b97a59fb34ef848f48c2003e52";
+    const buf = await readFile(REF_PATH);
+    const hash = createHash("sha256").update(buf).digest("hex");
+    assert.equal(
+      hash,
+      PINNED_SHA256,
+      `Source file SHA256 mismatch — file may have been silently replaced. Got: ${hash}`,
+    );
   });
 });
 
@@ -77,6 +90,34 @@ describe("player portrait files", () => {
         `player-${state} should be RGB (color type 2), got ${colorType}`,
       );
     }
+  });
+
+  it("crop-portraits.py HEAD_CROP should target upper mech region, not body art center", async () => {
+    const script = await readFile(
+      resolve(ROOT, "scripts/crop-portraits.py"),
+      "utf-8",
+    );
+    // Extract HEAD_CROP = (x0, y0, x1, y1)
+    const match = script.match(
+      /HEAD_CROP\s*=\s*\((\d+),\s*(\d+),\s*(\d+),\s*(\d+)\)/,
+    );
+    assert.ok(match, "HEAD_CROP constant not found in crop-portraits.py");
+    const [, , y0Str, , y1Str] = match;
+    const y0 = Number(y0Str);
+    const y1 = Number(y1Str);
+    // Source image is 256x256. The portrait strip / head region should start
+    // in the upper 60% of the image (y0 < 154). If y0 >= 154, the crop is
+    // likely from the lower body / legs area, which is forbidden.
+    assert.ok(
+      y0 < 256 * 0.6,
+      `HEAD_CROP y0=${y0} is too low — must be in upper 60% of source image`,
+    );
+    // Crop height should be reasonable (not the entire image)
+    const cropH = y1 - y0;
+    assert.ok(
+      cropH > 30 && cropH < 200,
+      `HEAD_CROP height=${cropH} is unreasonable — should be 30-200px`,
+    );
   });
 
   it("all three player portrait states should be visually distinct files", async () => {
