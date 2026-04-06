@@ -5,7 +5,11 @@
 import Phaser from "phaser";
 import { ASSET_REGISTRY, preloadAllAssets } from "../assets";
 import { MECH_ROSTER, OPPONENT_MECH } from "../data/mechs";
-import { loadMechPrompt } from "../utils/storage";
+import {
+  hasSeenOnboarding,
+  loadMechPrompt,
+  markOnboardingSeen,
+} from "../utils/storage";
 
 const COLORS = {
   background: 0x1a1a1a,
@@ -46,6 +50,10 @@ export class LobbyScene extends Phaser.Scene {
     const { width: w, height: h } = this.scale;
     this.buildUI(w, h);
     this.scale.on("resize", this.handleResize, this);
+
+    if (!hasSeenOnboarding()) {
+      this.showOnboarding();
+    }
   }
 
   private selectedMech() {
@@ -393,6 +401,181 @@ export class LobbyScene extends Phaser.Scene {
       this.scale.off("resize", this.handleResize, this);
       this.scene.start("HistoryScene");
     });
+
+    // Help button
+    const helpSize = 30;
+    const helpX = w - helpSize - w * 0.03;
+    const helpY = h * 0.03;
+
+    const helpBg = this.add.graphics();
+    helpBg.fillStyle(COLORS.buttonBg, 1);
+    helpBg.fillRoundedRect(helpX, helpY, helpSize, helpSize, 6);
+    helpBg.lineStyle(1, COLORS.panelBorder);
+    helpBg.strokeRoundedRect(helpX, helpY, helpSize, helpSize, 6);
+
+    this.add
+      .text(helpX + helpSize / 2, helpY + helpSize / 2, "?", {
+        fontSize: `${Math.max(14, Math.floor(w * 0.025))}px`,
+        color: COLORS.accent,
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+
+    const helpZone = this.add
+      .zone(helpX, helpY, helpSize, helpSize)
+      .setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+
+    helpZone.on("pointerdown", () => {
+      this.showOnboarding();
+    });
+  }
+
+  // --- Onboarding ---
+
+  private showOnboarding(): void {
+    const { width: w, height: h } = this.scale;
+    const overlay = this.add.container(0, 0);
+
+    const STEPS = [
+      {
+        title: "Welcome to Mech Arena AI!",
+        body: "Choose your mech and write a strategy prompt.\nYour AI will follow your strategy in battle.",
+      },
+      {
+        title: "Type Matchups",
+        body: "Fire \u25B6 Electric \u25B6 Water \u25B6 Fire\n\nSuper effective = 1.5\u00D7 damage\nResisted = 0.5\u00D7 damage\n\nPick skills wisely!",
+      },
+      {
+        title: "Learn & Improve",
+        body: "After battle, review results in History.\nTune your strategy prompt to win more!",
+      },
+    ];
+
+    let step = 0;
+
+    const drawStep = () => {
+      overlay.removeAll(true);
+
+      // Backdrop
+      const bg = this.add.graphics();
+      bg.fillStyle(0x000000, 0.85);
+      bg.fillRect(0, 0, w, h);
+      overlay.add(bg);
+
+      // Panel
+      const panelW = Math.min(w * 0.8, 400);
+      const panelH = Math.min(h * 0.5, 280);
+      const panelX = (w - panelW) / 2;
+      const panelY = (h - panelH) / 2;
+
+      const panel = this.add.graphics();
+      panel.fillStyle(0x2a2a2e, 1);
+      panel.fillRoundedRect(panelX, panelY, panelW, panelH, 10);
+      panel.lineStyle(2, COLORS.accentHex);
+      panel.strokeRoundedRect(panelX, panelY, panelW, panelH, 10);
+      overlay.add(panel);
+
+      const cx = w / 2;
+      const s = STEPS[step];
+
+      // Step indicator
+      overlay.add(
+        this.add
+          .text(cx, panelY + 15, `${step + 1} / ${STEPS.length}`, {
+            fontSize: `${Math.max(10, Math.floor(w * 0.014))}px`,
+            color: COLORS.dimText,
+          })
+          .setOrigin(0.5, 0),
+      );
+
+      // Title
+      overlay.add(
+        this.add
+          .text(cx, panelY + 35, s.title, {
+            fontSize: `${Math.max(18, Math.floor(w * 0.03))}px`,
+            color: COLORS.accent,
+            fontStyle: "bold",
+          })
+          .setOrigin(0.5, 0),
+      );
+
+      // Body
+      overlay.add(
+        this.add
+          .text(cx, panelY + 70, s.body, {
+            fontSize: `${Math.max(13, Math.floor(w * 0.02))}px`,
+            color: COLORS.text,
+            align: "center",
+            lineSpacing: 6,
+            wordWrap: { width: panelW - 40 },
+          })
+          .setOrigin(0.5, 0),
+      );
+
+      // Buttons row
+      const btnH = 36;
+      const btnY = panelY + panelH - btnH - 15;
+
+      // Skip button (always visible)
+      const skipW = 70;
+      const skipX = panelX + 20;
+      overlay.add(
+        this.add
+          .text(skipX + skipW / 2, btnY + btnH / 2, "Skip", {
+            fontSize: `${Math.max(12, Math.floor(w * 0.018))}px`,
+            color: COLORS.dimText,
+          })
+          .setOrigin(0.5),
+      );
+      const skipZone = this.add
+        .zone(skipX, btnY, skipW, btnH)
+        .setOrigin(0)
+        .setInteractive({ useHandCursor: true });
+      skipZone.on("pointerdown", () => {
+        markOnboardingSeen();
+        overlay.destroy();
+      });
+      overlay.add(skipZone);
+
+      // Next / Got it button
+      const nextW = Math.min(panelW * 0.35, 130);
+      const nextX = panelX + panelW - nextW - 20;
+      const isLast = step === STEPS.length - 1;
+      const nextLabel = isLast ? "Got it!" : "Next \u2192";
+
+      const nextBg = this.add.graphics();
+      nextBg.fillStyle(COLORS.accentHex, 1);
+      nextBg.fillRoundedRect(nextX, btnY, nextW, btnH, 6);
+      overlay.add(nextBg);
+
+      overlay.add(
+        this.add
+          .text(nextX + nextW / 2, btnY + btnH / 2, nextLabel, {
+            fontSize: `${Math.max(13, Math.floor(w * 0.02))}px`,
+            color: "#000000",
+            fontStyle: "bold",
+          })
+          .setOrigin(0.5),
+      );
+
+      const nextZone = this.add
+        .zone(nextX, btnY, nextW, btnH)
+        .setOrigin(0)
+        .setInteractive({ useHandCursor: true });
+      nextZone.on("pointerdown", () => {
+        if (isLast) {
+          markOnboardingSeen();
+          overlay.destroy();
+        } else {
+          step++;
+          drawStep();
+        }
+      });
+      overlay.add(nextZone);
+    };
+
+    drawStep();
   }
 
   private handleResize(gameSize: Phaser.Structs.Size): void {
