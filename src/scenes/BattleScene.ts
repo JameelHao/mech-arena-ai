@@ -532,10 +532,11 @@ export class BattleScene extends Phaser.Scene {
     const logH = Math.min(h * 0.35, h - logY - 10);
 
     const bg = this.add.graphics();
-    bg.fillStyle(0x1a1a2e, 0.92);
+    bg.fillStyle(0x1a1a2e, 0.95);
     bg.fillRoundedRect(logX, logY, logW, logH, 6);
-    bg.lineStyle(1, COLORS.panelBorder);
+    bg.lineStyle(2, 0x555555);
     bg.strokeRoundedRect(logX, logY, logW, logH, 6);
+    bg.setDepth(10);
 
     // Panel title
     const titleSize = Math.max(11, Math.floor(w * 0.015));
@@ -544,10 +545,12 @@ export class BattleScene extends Phaser.Scene {
         fontSize: `${titleSize}px`,
         color: "#888888",
       })
-      .setOrigin(0, 0);
+      .setOrigin(0, 0)
+      .setDepth(11);
 
     const titleOffset = titleSize + 10;
     this.logContainer = this.add.container(logX + 10, logY + titleOffset);
+    this.logContainer.setDepth(12);
 
     // Keep legacy text object for compatibility (hidden)
     this.battleLogText = this.add
