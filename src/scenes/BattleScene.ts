@@ -1360,14 +1360,18 @@ export class BattleScene extends Phaser.Scene {
     });
 
     zone.on("pointerdown", () => {
-      this.scale.off("resize", this.handleResize, this);
-      if (this.promptContainer) {
-        this.promptContainer.remove();
-        this.promptContainer = undefined;
-      }
-      this.cleanupPWABanners();
+      this.cleanupForSceneChange();
       this.scene.start("HistoryScene");
     });
+  }
+
+  private cleanupForSceneChange(): void {
+    this.scale.off("resize", this.handleResize, this);
+    if (this.promptContainer) {
+      this.promptContainer.remove();
+      this.promptContainer = undefined;
+    }
+    this.cleanupPWABanners();
   }
 
   // --- Sound toggle button ---
@@ -1596,6 +1600,34 @@ export class BattleScene extends Phaser.Scene {
       this.scene.start("HistoryScene");
     });
     this.resultOverlay.add(histZone);
+
+    // Back to Lobby button
+    const lobbyBtnY = histBtnY + btnH + 8;
+    const lobbyH = 32;
+    const lobbyText = this.add
+      .text(w / 2, lobbyBtnY + lobbyH / 2, "Back to Lobby", {
+        fontSize: `${Math.max(11, Math.floor(w * 0.018))}px`,
+        color: "#888888",
+      })
+      .setOrigin(0.5);
+    this.resultOverlay.add(lobbyText);
+
+    const lobbyZone = this.add
+      .zone(btnX, lobbyBtnY, btnW, lobbyH)
+      .setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+
+    lobbyZone.on("pointerover", () => {
+      lobbyText.setColor(COLORS.accent);
+    });
+    lobbyZone.on("pointerout", () => {
+      lobbyText.setColor("#888888");
+    });
+    lobbyZone.on("pointerdown", () => {
+      this.cleanupForSceneChange();
+      this.scene.start("LobbyScene");
+    });
+    this.resultOverlay.add(lobbyZone);
 
     // Fade in overlay, then bounce title
     this.resultOverlay.setAlpha(0);
