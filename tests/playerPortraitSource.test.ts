@@ -60,4 +60,31 @@ describe("player portrait files", () => {
       );
     }
   });
+
+  it("player portraits should be 64x64 PNG (IHDR check)", async () => {
+    for (const state of STATES) {
+      const buf = await readFile(resolve(PORTRAIT_DIR, `player-${state}.png`));
+      // PNG IHDR chunk starts at byte 16: width (4 bytes BE) + height (4 bytes BE) + bit depth + color type
+      const width = buf.readUInt32BE(16);
+      const height = buf.readUInt32BE(20);
+      assert.equal(width, 64, `player-${state} width should be 64`);
+      assert.equal(height, 64, `player-${state} height should be 64`);
+      // color type at byte 25: 2 = RGB (no alpha)
+      const colorType = buf[25];
+      assert.equal(
+        colorType,
+        2,
+        `player-${state} should be RGB (color type 2), got ${colorType}`,
+      );
+    }
+  });
+
+  it("all three player portrait states should be visually distinct files", async () => {
+    const bufs = await Promise.all(
+      STATES.map((s) => readFile(resolve(PORTRAIT_DIR, `player-${s}.png`))),
+    );
+    assert.notDeepEqual(bufs[0], bufs[1], "normal and angry should differ");
+    assert.notDeepEqual(bufs[1], bufs[2], "angry and defeated should differ");
+    assert.notDeepEqual(bufs[0], bufs[2], "normal and defeated should differ");
+  });
 });
