@@ -25,6 +25,7 @@ const ROWS_PER_PAGE = 8;
 export class HistoryScene extends Phaser.Scene {
   private records: BattleRecord[] = [];
   private page = 0;
+  private detailOverlay?: Phaser.GameObjects.Container;
 
   constructor() {
     super({ key: "HistoryScene" });
@@ -32,6 +33,7 @@ export class HistoryScene extends Phaser.Scene {
 
   async create(): Promise<void> {
     this.page = 0;
+    this.detailOverlay = undefined;
     this.records = await loadBattleHistory();
     this.buildUI();
     this.scale.on("resize", this.handleResize, this);
@@ -140,14 +142,21 @@ export class HistoryScene extends Phaser.Scene {
       })
       .setOrigin(0, 0.5);
     this.add
-      .text(listX + listW * 0.55, headerY, "Turns", {
+      .text(listX + listW * 0.5, headerY, "Turns", {
         fontSize,
         color: COLORS.dimText,
         fontStyle: "bold",
       })
       .setOrigin(0, 0.5);
     this.add
-      .text(listX + listW * 0.7, headerY, "Date", {
+      .text(listX + listW * 0.62, headerY, "HP", {
+        fontSize,
+        color: COLORS.dimText,
+        fontStyle: "bold",
+      })
+      .setOrigin(0, 0.5);
+    this.add
+      .text(listX + listW * 0.78, headerY, "Date", {
         fontSize,
         color: COLORS.dimText,
         fontStyle: "bold",
@@ -211,21 +220,42 @@ export class HistoryScene extends Phaser.Scene {
 
       // Turns
       this.add
-        .text(listX + listW * 0.55, rowY, `${record.turns}`, {
+        .text(listX + listW * 0.5, rowY, `${record.turns}`, {
           fontSize,
           color: COLORS.text,
         })
+        .setOrigin(0, 0.5);
+
+      // HP
+      const hpColor = record.result === "win" ? COLORS.win : COLORS.loss;
+      this.add
+        .text(
+          listX + listW * 0.62,
+          rowY,
+          `${record.playerHpLeft}/${record.opponentHpLeft}`,
+          { fontSize, color: hpColor },
+        )
         .setOrigin(0, 0.5);
 
       // Date
       const date = new Date(record.timestamp);
       const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
       this.add
-        .text(listX + listW * 0.7, rowY, dateStr, {
+        .text(listX + listW * 0.78, rowY, dateStr, {
           fontSize,
           color: COLORS.dimText,
         })
         .setOrigin(0, 0.5);
+
+      // Clickable row zone
+      const rowZone = this.add
+        .zone(listX, rowY - rowH * 0.4, listW, rowH)
+        .setOrigin(0)
+        .setInteractive({ useHandCursor: true });
+
+      rowZone.on("pointerdown", () => {
+        this.showDetailPanel(record);
+      });
     }
   }
 
@@ -346,6 +376,171 @@ export class HistoryScene extends Phaser.Scene {
     zone.on("pointerdown", () => {
       this.scale.off("resize", this.handleResize, this);
       this.scene.start("BattleScene");
+    });
+  }
+
+  private showDetailPanel(record: BattleRecord): void {
+    if (this.detailOverlay) {
+      this.detailOverlay.destroy();
+    }
+
+    const { width: w, height: h } = this.scale;
+    this.detailOverlay = this.add.container(0, 0);
+
+    // Dark backdrop
+    const backdrop = this.add.graphics();
+    backdrop.fillStyle(0x000000, 0.75);
+    backdrop.fillRect(0, 0, w, h);
+    this.detailOverlay.add(backdrop);
+
+    // Panel
+    const panelW = Math.min(w * 0.8, 400);
+    const panelH = Math.min(h * 0.55, 350);
+    const panelX = (w - panelW) / 2;
+    const panelY = (h - panelH) / 2;
+
+    const panel = this.add.graphics();
+    panel.fillStyle(0x2a2a2e, 1);
+    panel.fillRoundedRect(panelX, panelY, panelW, panelH, 10);
+    panel.lineStyle(2, 0x555555);
+    panel.strokeRoundedRect(panelX, panelY, panelW, panelH, 10);
+    this.detailOverlay.add(panel);
+
+    const fontSize = `${Math.max(13, Math.floor(w * 0.02))}px`;
+    const cx = w / 2;
+    let y = panelY + 20;
+    const lineH = Math.max(22, h * 0.04);
+
+    // Result title
+    const resultText = record.result === "win" ? "VICTORY" : "DEFEAT";
+    const resultColor = record.result === "win" ? COLORS.win : COLORS.loss;
+    const title = this.add
+      .text(cx, y, resultText, {
+        fontSize: `${Math.max(20, Math.floor(w * 0.035))}px`,
+        color: resultColor,
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5, 0);
+    this.detailOverlay.add(title);
+    y += lineH + 10;
+
+    // Matchup
+    const matchup = `${record.playerMechType.toUpperCase()} vs ${record.opponentMechType.toUpperCase()}`;
+    this.detailOverlay.add(
+      this.add
+        .text(cx, y, matchup, { fontSize, color: COLORS.text })
+        .setOrigin(0.5, 0),
+    );
+    y += lineH;
+
+    // Turns
+    this.detailOverlay.add(
+      this.add
+        .text(cx, y, `Turns: ${record.turns}`, { fontSize, color: COLORS.text })
+        .setOrigin(0.5, 0),
+    );
+    y += lineH;
+
+    // Player HP
+    this.detailOverlay.add(
+      this.add
+        .text(cx, y, `Your HP: ${record.playerHpLeft}`, {
+          fontSize,
+          color: COLORS.win,
+        })
+        .setOrigin(0.5, 0),
+    );
+    y += lineH;
+
+    // Opponent HP
+    this.detailOverlay.add(
+      this.add
+        .text(cx, y, `Enemy HP: ${record.opponentHpLeft}`, {
+          fontSize,
+          color: COLORS.loss,
+        })
+        .setOrigin(0.5, 0),
+    );
+    y += lineH;
+
+    // Date
+    const date = new Date(record.timestamp);
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+    this.detailOverlay.add(
+      this.add
+        .text(cx, y, dateStr, { fontSize, color: COLORS.dimText })
+        .setOrigin(0.5, 0),
+    );
+    y += lineH + 5;
+
+    // Prompt
+    const promptLabel = record.prompt
+      ? record.prompt.length > 80
+        ? `${record.prompt.slice(0, 77)}...`
+        : record.prompt
+      : "No strategy saved";
+    const promptColor = record.prompt ? COLORS.accent : COLORS.dimText;
+    this.detailOverlay.add(
+      this.add
+        .text(cx, y, `Strategy: ${promptLabel}`, {
+          fontSize: `${Math.max(11, Math.floor(w * 0.016))}px`,
+          color: promptColor,
+          wordWrap: { width: panelW - 40 },
+        })
+        .setOrigin(0.5, 0),
+    );
+
+    // Close button
+    const closeBtnW = Math.min(panelW * 0.4, 120);
+    const closeBtnH = 36;
+    const closeBtnX = cx - closeBtnW / 2;
+    const closeBtnY = panelY + panelH - closeBtnH - 15;
+
+    const closeBg = this.add.graphics();
+    closeBg.fillStyle(COLORS.buttonBg, 1);
+    closeBg.fillRoundedRect(closeBtnX, closeBtnY, closeBtnW, closeBtnH, 6);
+    closeBg.lineStyle(1, COLORS.panelBorder);
+    closeBg.strokeRoundedRect(closeBtnX, closeBtnY, closeBtnW, closeBtnH, 6);
+    this.detailOverlay.add(closeBg);
+
+    this.detailOverlay.add(
+      this.add
+        .text(cx, closeBtnY + closeBtnH / 2, "Close", {
+          fontSize,
+          color: COLORS.text,
+        })
+        .setOrigin(0.5),
+    );
+
+    const closeZone = this.add
+      .zone(closeBtnX, closeBtnY, closeBtnW, closeBtnH)
+      .setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+
+    closeZone.on("pointerdown", () => {
+      this.detailOverlay?.destroy();
+      this.detailOverlay = undefined;
+    });
+    this.detailOverlay.add(closeZone);
+
+    // Also close on backdrop click
+    const backdropZone = this.add
+      .zone(0, 0, w, h)
+      .setOrigin(0)
+      .setInteractive();
+    backdropZone.on("pointerdown", () => {
+      this.detailOverlay?.destroy();
+      this.detailOverlay = undefined;
+    });
+    this.detailOverlay.addAt(backdropZone, 1);
+
+    // Fade in
+    this.detailOverlay.setAlpha(0);
+    this.tweens.add({
+      targets: this.detailOverlay,
+      alpha: 1,
+      duration: 200,
+      ease: "Power2",
     });
   }
 
