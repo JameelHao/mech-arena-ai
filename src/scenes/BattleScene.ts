@@ -1228,8 +1228,13 @@ export class BattleScene extends Phaser.Scene {
         this.mechPrompt,
         this.battleManager.getState(),
       );
-      aiSkillIndex = apiResult?.move ?? this.battleManager.getRandomAiSkill();
-      aiReasoning = apiResult?.reasoning;
+      if (apiResult) {
+        aiSkillIndex = apiResult.move;
+        aiReasoning = apiResult.reasoning;
+      } else {
+        aiSkillIndex = this.battleManager.getRandomAiSkill();
+        this.addLogMessage("[TURN]Strategy offline \u2014 using random AI");
+      }
     } else {
       aiSkillIndex = this.battleManager.getRandomAiSkill();
     }
