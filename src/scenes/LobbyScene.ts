@@ -7,8 +7,11 @@ import { ASSET_REGISTRY, preloadAllAssets } from "../assets";
 import { MECH_ROSTER, OPPONENT_MECH } from "../data/mechs";
 import {
   hasSeenOnboarding,
+  hasStarterMech,
   loadMechPrompt,
+  loadStarterMech,
   markOnboardingSeen,
+  saveStarterMech,
 } from "../utils/storage";
 
 const COLORS = {
@@ -46,12 +49,14 @@ export class LobbyScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.selectedIndex = 0;
+    this.selectedIndex = hasStarterMech() ? loadStarterMech() : 0;
     const { width: w, height: h } = this.scale;
     this.buildUI(w, h);
     this.scale.on("resize", this.handleResize, this);
 
-    if (!hasSeenOnboarding()) {
+    if (!hasStarterMech()) {
+      this.showMechBinding();
+    } else if (!hasSeenOnboarding()) {
       this.showOnboarding();
     }
   }
@@ -429,6 +434,179 @@ export class LobbyScene extends Phaser.Scene {
     helpZone.on("pointerdown", () => {
       this.showOnboarding();
     });
+  }
+
+  // --- Mech Binding ---
+
+  private showMechBinding(): void {
+    const { width: w, height: h } = this.scale;
+    const overlay = this.add.container(0, 0);
+
+    // Backdrop
+    const bg = this.add.graphics();
+    bg.fillStyle(0x000000, 0.9);
+    bg.fillRect(0, 0, w, h);
+    overlay.add(bg);
+
+    // Title
+    overlay.add(
+      this.add
+        .text(w / 2, h * 0.06, "CHOOSE YOUR MECH", {
+          fontSize: `${Math.max(20, Math.floor(w * 0.035))}px`,
+          color: COLORS.accent,
+          fontStyle: "bold",
+        })
+        .setOrigin(0.5),
+    );
+
+    overlay.add(
+      this.add
+        .text(w / 2, h * 0.11, "Select your starter mech to begin", {
+          fontSize: `${Math.max(12, Math.floor(w * 0.018))}px`,
+          color: "#888888",
+        })
+        .setOrigin(0.5),
+    );
+
+    let bindingIndex = 0;
+    const cardW = Math.min(w * 0.85, 400);
+    const cardH = Math.max(60, h * 0.12);
+    const cardX = (w - cardW) / 2;
+    const startY = h * 0.17;
+    const gap = 8;
+    const fontSize = `${Math.max(12, Math.floor(w * 0.018))}px`;
+    const subFont = `${Math.max(10, Math.floor(w * 0.014))}px`;
+
+    const drawCards = () => {
+      // Remove old card elements (tagged)
+      for (const obj of overlay.list.filter((o) =>
+        (o as Phaser.GameObjects.GameObject).getData("card"),
+      )) {
+        obj.destroy();
+      }
+
+      for (let i = 0; i < MECH_ROSTER.length; i++) {
+        const mech = MECH_ROSTER[i];
+        const y = startY + i * (cardH + gap);
+        const isSelected = i === bindingIndex;
+
+        const cardBg = this.add.graphics();
+        cardBg.setData("card", true);
+        cardBg.fillStyle(isSelected ? 0x1a3a1a : COLORS.panelBg, 1);
+        cardBg.fillRoundedRect(cardX, y, cardW, cardH, 8);
+        cardBg.lineStyle(2, isSelected ? COLORS.accentHex : COLORS.panelBorder);
+        cardBg.strokeRoundedRect(cardX, y, cardW, cardH, 8);
+        overlay.add(cardBg);
+
+        const typeColor = TYPE_COLORS[mech.type] ?? COLORS.text;
+
+        // Portrait
+        const portraitSize = Math.min(48, cardH - 12);
+        const portrait = ASSET_REGISTRY.portraits[mech.type];
+        if (portrait) {
+          const key = portrait.normal.key;
+          if (this.textures.exists(key)) {
+            const img = this.add
+              .image(cardX + 10 + portraitSize / 2, y + cardH / 2, key)
+              .setDisplaySize(portraitSize, portraitSize)
+              .setData("card", true);
+            overlay.add(img);
+          }
+        }
+
+        const textX = cardX + 10 + portraitSize + 12;
+
+        const name = this.add
+          .text(textX, y + 8, mech.codename ?? mech.name, {
+            fontSize,
+            color: typeColor,
+            fontStyle: "bold",
+          })
+          .setData("card", true);
+        overlay.add(name);
+
+        const role = this.add
+          .text(textX, y + 26, `${mech.role ?? mech.type.toUpperCase()}`, {
+            fontSize: subFont,
+            color: "#888888",
+          })
+          .setData("card", true);
+        overlay.add(role);
+
+        if (mech.bio) {
+          const bio = this.add
+            .text(textX, y + 40, mech.bio, {
+              fontSize: `${Math.max(9, Math.floor(w * 0.012))}px`,
+              color: "#666666",
+              wordWrap: { width: cardW - portraitSize - 40 },
+            })
+            .setData("card", true);
+          overlay.add(bio);
+        }
+
+        const zone = this.add
+          .zone(cardX, y, cardW, cardH)
+          .setOrigin(0)
+          .setInteractive({ useHandCursor: true })
+          .setData("card", true);
+
+        zone.on("pointerdown", () => {
+          bindingIndex = i;
+          drawCards();
+        });
+        overlay.add(zone);
+      }
+    };
+
+    drawCards();
+
+    // Confirm button
+    const btnW = Math.min(w * 0.5, 220);
+    const btnH = 44;
+    const btnX = w / 2 - btnW / 2;
+    const btnY = h * 0.17 + MECH_ROSTER.length * (cardH + gap) + 16;
+
+    const confirmBg = this.add.graphics();
+    confirmBg.fillStyle(COLORS.accentHex, 1);
+    confirmBg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
+    overlay.add(confirmBg);
+
+    overlay.add(
+      this.add
+        .text(w / 2, btnY + btnH / 2, "Choose This Mech", {
+          fontSize: `${Math.max(15, Math.floor(w * 0.023))}px`,
+          color: "#000000",
+          fontStyle: "bold",
+        })
+        .setOrigin(0.5),
+    );
+
+    const confirmZone = this.add
+      .zone(btnX, btnY, btnW, btnH)
+      .setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+
+    confirmZone.on("pointerover", () => {
+      confirmBg.clear();
+      confirmBg.fillStyle(0x00cc66, 1);
+      confirmBg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
+    });
+    confirmZone.on("pointerout", () => {
+      confirmBg.clear();
+      confirmBg.fillStyle(COLORS.accentHex, 1);
+      confirmBg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
+    });
+    confirmZone.on("pointerdown", () => {
+      saveStarterMech(bindingIndex);
+      this.selectedIndex = bindingIndex;
+      overlay.destroy();
+      this.buildUI(w, h);
+
+      if (!hasSeenOnboarding()) {
+        this.showOnboarding();
+      }
+    });
+    overlay.add(confirmZone);
   }
 
   // --- Onboarding ---

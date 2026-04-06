@@ -212,3 +212,22 @@ export function hasSeenOnboarding(): boolean {
 export function markOnboardingSeen(): void {
   localStorage.setItem(ONBOARDING_KEY, "true");
 }
+
+// --- Starter Mech ---
+
+const STARTER_MECH_KEY = "mechArena_starterMech";
+
+export function hasStarterMech(): boolean {
+  return localStorage.getItem(STARTER_MECH_KEY) !== null;
+}
+
+export function loadStarterMech(): number {
+  const val = localStorage.getItem(STARTER_MECH_KEY);
+  if (val === null) return 0;
+  const idx = Number.parseInt(val, 10);
+  return Number.isNaN(idx) ? 0 : idx;
+}
+
+export function saveStarterMech(index: number): void {
+  localStorage.setItem(STARTER_MECH_KEY, String(index));
+}
