@@ -1271,35 +1271,45 @@ export class BattleScene extends Phaser.Scene {
 
   private showResultScreen(won: boolean): void {
     this.saveBattleRecord(won);
+    const state = this.battleManager.getState();
     const { width: w, height: h } = this.scale;
 
     this.resultOverlay = this.add.container(0, 0);
 
     // Dark overlay
     const bg = this.add.graphics();
-    bg.fillStyle(0x000000, 0.7);
+    bg.fillStyle(0x000000, 0.75);
     bg.fillRect(0, 0, w, h);
     this.resultOverlay.add(bg);
 
-    // Result text
+    // Result icon
+    const icon = this.add
+      .text(w / 2, h * 0.22, won ? "\uD83C\uDFC6" : "\uD83D\uDC80", {
+        fontSize: `${Math.max(40, Math.floor(w * 0.07))}px`,
+      })
+      .setOrigin(0.5);
+    this.resultOverlay.add(icon);
+
+    // Result title with bounce animation
     const titleText = won ? "VICTORY!" : "DEFEAT...";
     const titleColor = won ? "#00ff88" : "#ff4500";
     const title = this.add
-      .text(w / 2, h * 0.35, titleText, {
+      .text(w / 2, h * 0.33, titleText, {
         fontSize: `${Math.max(32, Math.floor(w * 0.06))}px`,
         color: titleColor,
         fontStyle: "bold",
         stroke: "#000000",
         strokeThickness: 4,
       })
-      .setOrigin(0.5);
+      .setOrigin(0.5)
+      .setScale(0);
     this.resultOverlay.add(title);
 
     // Subtitle
     const subtitle = this.add
       .text(
         w / 2,
-        h * 0.45,
+        h * 0.42,
         won ? "Enemy mech destroyed!" : "Your mech was destroyed...",
         {
           fontSize: `${Math.max(14, Math.floor(w * 0.025))}px`,
@@ -1309,11 +1319,24 @@ export class BattleScene extends Phaser.Scene {
       .setOrigin(0.5);
     this.resultOverlay.add(subtitle);
 
+    // Battle summary
+    const summaryFontSize = Math.max(12, Math.floor(w * 0.02));
+    const hpText = won
+      ? `HP: ${state.player.hp}/${state.player.maxHp}`
+      : `HP: 0/${state.player.maxHp}`;
+    const summary = this.add
+      .text(w / 2, h * 0.48, `Turns: ${state.turnCount}  |  ${hpText}`, {
+        fontSize: `${summaryFontSize}px`,
+        color: "#aaaaaa",
+      })
+      .setOrigin(0.5);
+    this.resultOverlay.add(summary);
+
     // Play Again button
     const btnW = Math.min(w * 0.3, 200);
-    const btnH = 48;
+    const btnH = 44;
     const btnX = w / 2 - btnW / 2;
-    const btnY = h * 0.56;
+    const btnY = h * 0.55;
 
     const btnBg = this.add.graphics();
     btnBg.fillStyle(COLORS.accentHex, 1);
@@ -1351,13 +1374,65 @@ export class BattleScene extends Phaser.Scene {
     });
     this.resultOverlay.add(btnZone);
 
-    // Fade in
+    // History button
+    const histBtnY = btnY + btnH + 12;
+    const histBg = this.add.graphics();
+    histBg.fillStyle(COLORS.buttonBg, 1);
+    histBg.fillRoundedRect(btnX, histBtnY, btnW, btnH, 8);
+    histBg.lineStyle(1, COLORS.panelBorder);
+    histBg.strokeRoundedRect(btnX, histBtnY, btnW, btnH, 8);
+    this.resultOverlay.add(histBg);
+
+    const histText = this.add
+      .text(w / 2, histBtnY + btnH / 2, "History", {
+        fontSize: `${Math.max(14, Math.floor(w * 0.022))}px`,
+        color: "#cccccc",
+      })
+      .setOrigin(0.5);
+    this.resultOverlay.add(histText);
+
+    const histZone = this.add
+      .zone(btnX, histBtnY, btnW, btnH)
+      .setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+
+    histZone.on("pointerover", () => {
+      histBg.clear();
+      histBg.fillStyle(COLORS.buttonHover, 1);
+      histBg.fillRoundedRect(btnX, histBtnY, btnW, btnH, 8);
+      histBg.lineStyle(1, COLORS.panelBorder);
+      histBg.strokeRoundedRect(btnX, histBtnY, btnW, btnH, 8);
+    });
+
+    histZone.on("pointerout", () => {
+      histBg.clear();
+      histBg.fillStyle(COLORS.buttonBg, 1);
+      histBg.fillRoundedRect(btnX, histBtnY, btnW, btnH, 8);
+      histBg.lineStyle(1, COLORS.panelBorder);
+      histBg.strokeRoundedRect(btnX, histBtnY, btnW, btnH, 8);
+    });
+
+    histZone.on("pointerdown", () => {
+      this.scene.start("HistoryScene");
+    });
+    this.resultOverlay.add(histZone);
+
+    // Fade in overlay, then bounce title
     this.resultOverlay.setAlpha(0);
     this.tweens.add({
       targets: this.resultOverlay,
       alpha: 1,
-      duration: 400,
+      duration: 300,
       ease: "Power2",
+      onComplete: () => {
+        this.tweens.add({
+          targets: title,
+          scaleX: 1,
+          scaleY: 1,
+          duration: 600,
+          ease: "Bounce.easeOut",
+        });
+      },
     });
   }
 
