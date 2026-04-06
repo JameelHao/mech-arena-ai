@@ -100,21 +100,32 @@ export class LobbyScene extends Phaser.Scene {
         img.setDisplaySize(portraitSize, portraitSize);
       }
     }
+    const playerNameY = centerY + portraitSize / 2;
     this.add
-      .text(playerX, centerY + portraitSize / 2, PLAYER_MECH.name, {
+      .text(playerX, playerNameY, PLAYER_MECH.codename ?? PLAYER_MECH.name, {
         fontSize,
         color: TYPE_COLORS[PLAYER_MECH.type] ?? COLORS.text,
         fontStyle: "bold",
       })
       .setOrigin(0.5, 0);
-    this.add
-      .text(
-        playerX,
-        centerY + portraitSize / 2 + 18,
-        PLAYER_MECH.type.toUpperCase(),
-        { fontSize: subFontSize, color: COLORS.dimText },
-      )
-      .setOrigin(0.5, 0);
+    if (PLAYER_MECH.role) {
+      this.add
+        .text(playerX, playerNameY + 16, PLAYER_MECH.role, {
+          fontSize: subFontSize,
+          color: COLORS.dimText,
+        })
+        .setOrigin(0.5, 0);
+    }
+    if (PLAYER_MECH.bio) {
+      this.add
+        .text(playerX, playerNameY + 30, PLAYER_MECH.bio, {
+          fontSize: `${Math.max(9, Math.floor(w * 0.012))}px`,
+          color: "#777777",
+          wordWrap: { width: panelW * 0.35 },
+          align: "center",
+        })
+        .setOrigin(0.5, 0);
+    }
 
     // VS
     this.add
@@ -135,21 +146,37 @@ export class LobbyScene extends Phaser.Scene {
         img.setDisplaySize(portraitSize, portraitSize);
       }
     }
-    this.add
-      .text(opponentX, centerY + portraitSize / 2, OPPONENT_MECH.name, {
-        fontSize,
-        color: TYPE_COLORS[OPPONENT_MECH.type] ?? COLORS.text,
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5, 0);
+    const opponentNameY = centerY + portraitSize / 2;
     this.add
       .text(
         opponentX,
-        centerY + portraitSize / 2 + 18,
-        OPPONENT_MECH.type.toUpperCase(),
-        { fontSize: subFontSize, color: COLORS.dimText },
+        opponentNameY,
+        OPPONENT_MECH.codename ?? OPPONENT_MECH.name,
+        {
+          fontSize,
+          color: TYPE_COLORS[OPPONENT_MECH.type] ?? COLORS.text,
+          fontStyle: "bold",
+        },
       )
       .setOrigin(0.5, 0);
+    if (OPPONENT_MECH.role) {
+      this.add
+        .text(opponentX, opponentNameY + 16, OPPONENT_MECH.role, {
+          fontSize: subFontSize,
+          color: COLORS.dimText,
+        })
+        .setOrigin(0.5, 0);
+    }
+    if (OPPONENT_MECH.bio) {
+      this.add
+        .text(opponentX, opponentNameY + 30, OPPONENT_MECH.bio, {
+          fontSize: `${Math.max(9, Math.floor(w * 0.012))}px`,
+          color: "#777777",
+          wordWrap: { width: panelW * 0.35 },
+          align: "center",
+        })
+        .setOrigin(0.5, 0);
+    }
   }
 
   private drawSkillPreview(w: number, h: number): void {

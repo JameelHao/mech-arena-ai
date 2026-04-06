@@ -7,6 +7,9 @@ export const PLAYER_MECH: Mech = {
   type: MechType.Fire,
   hp: 100,
   maxHp: 100,
+  codename: "FALCON UNIT",
+  role: "Assault",
+  bio: "Agile fire-type striker built for aggressive offense.",
   skills: [
     { name: "Fire Blast", type: MechType.Fire, damage: 40 },
     { name: "Water Cannon", type: MechType.Water, damage: 30 },
@@ -20,6 +23,9 @@ export const OPPONENT_MECH: Mech = {
   type: MechType.Water,
   hp: 100,
   maxHp: 100,
+  codename: "VENOM BATTALION",
+  role: "Tank",
+  bio: "Heavy water-type defender with punishing counter-attacks.",
   skills: [
     { name: "Water Cannon", type: MechType.Water, damage: 30 },
     { name: "Fire Blast", type: MechType.Fire, damage: 40 },

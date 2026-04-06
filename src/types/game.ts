@@ -30,6 +30,9 @@ export interface Mech {
   hp: number;
   maxHp: number;
   skills: Skill[];
+  codename?: string;
+  role?: string;
+  bio?: string;
 }
 
 export interface BattleState {
