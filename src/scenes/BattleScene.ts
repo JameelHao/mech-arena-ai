@@ -499,20 +499,30 @@ export class BattleScene extends Phaser.Scene {
     const logX = w * 0.03;
     const logY = h * 0.37;
     const logW = w * 0.44;
-    const logH = Math.min(h * 0.2, h - logY - 10);
+    const logH = Math.min(h * 0.25, h - logY - 10);
 
     const bg = this.add.graphics();
-    bg.fillStyle(0x111111, 0.85);
+    bg.fillStyle(0x1a1a2e, 0.92);
     bg.fillRoundedRect(logX, logY, logW, logH, 6);
     bg.lineStyle(1, COLORS.panelBorder);
     bg.strokeRoundedRect(logX, logY, logW, logH, 6);
 
-    this.logContainer = this.add.container(logX + 10, logY + 6);
+    // Panel title
+    const titleSize = Math.max(11, Math.floor(w * 0.015));
+    this.add
+      .text(logX + 10, logY + 5, "\u2694 Battle Log", {
+        fontSize: `${titleSize}px`,
+        color: "#888888",
+      })
+      .setOrigin(0, 0);
+
+    const titleOffset = titleSize + 10;
+    this.logContainer = this.add.container(logX + 10, logY + titleOffset);
 
     // Keep legacy text object for compatibility (hidden)
     this.battleLogText = this.add
       .text(0, 0, "", {
-        fontSize: `${Math.max(10, Math.floor(w * 0.014))}px`,
+        fontSize: `${Math.max(12, Math.floor(w * 0.018))}px`,
         color: COLORS.accent,
         wordWrap: { width: logW - 20 },
         lineSpacing: 3,
@@ -520,7 +530,7 @@ export class BattleScene extends Phaser.Scene {
       .setOrigin(0, 0)
       .setVisible(false);
 
-    this.logFontSize = Math.max(10, Math.floor(w * 0.014));
+    this.logFontSize = Math.max(12, Math.floor(w * 0.018));
     this.logLineWidth = logW - 20;
 
     // Mask to clip overflow
@@ -550,7 +560,7 @@ export class BattleScene extends Phaser.Scene {
     }
     this.logLineTexts = [];
 
-    const lineHeight = this.logFontSize + 5;
+    const lineHeight = this.logFontSize + 6;
     for (let i = 0; i < this.logMessages.length; i++) {
       const lineText = this.add
         .text(0, i * lineHeight, this.logMessages[i], {

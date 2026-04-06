@@ -35,7 +35,11 @@ export class BattleManager {
       turnCount: 1,
       winner: null,
     };
-    this.addLog("Battle Start!");
+    this.addLog("[TURN]--- Battle Start ---");
+    this.addLog(
+      `[EFF]${this.state.player.name} vs ${this.state.opponent.name}`,
+    );
+    this.addLog("Choose your attack!");
     return this.getState();
   }
 

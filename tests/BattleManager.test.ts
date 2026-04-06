@@ -43,7 +43,7 @@ describe("BattleManager", () => {
       assert.equal(state.phase, TurnPhase.PlayerTurn);
       assert.equal(state.turnCount, 1);
       assert.equal(state.winner, null);
-      assert.ok(state.log.includes("Battle Start!"));
+      assert.ok(state.log.some((m: string) => m.includes("Battle Start")));
     });
 
     it("should reset HP to maxHp", () => {
@@ -286,12 +286,10 @@ describe("BattleManager", () => {
     it("should log defense skill usage", () => {
       bm.initBattle(player, opponent);
       const state = bm.executePlayerAttack(3); // Iron Defense
-      const effLog = state.log.find((m) => m.startsWith("[EFF]"));
-      assert.ok(effLog, "should have an [EFF] prefixed log");
-      assert.ok(
-        effLog.includes("raised defense"),
-        "should mention raised defense",
+      const effLog = state.log.find(
+        (m) => m.startsWith("[EFF]") && m.includes("raised defense"),
       );
+      assert.ok(effLog, "should mention raised defense");
     });
 
     it("should log turn transition after AI attack", () => {
@@ -299,9 +297,10 @@ describe("BattleManager", () => {
       bm.executePlayerAttack(0);
       const state = bm.executeAiAttack(0);
       if (state.phase !== TurnPhase.BattleOver) {
-        const turnLog = state.log.find((m) => m.startsWith("[TURN]"));
-        assert.ok(turnLog, "should have a [TURN] prefixed log");
-        assert.ok(turnLog.includes("Turn 2"), "should indicate turn 2");
+        const turnLog = state.log.find(
+          (m) => m.startsWith("[TURN]") && m.includes("Turn 2"),
+        );
+        assert.ok(turnLog, "should indicate turn 2");
       }
     });
 
@@ -341,10 +340,13 @@ describe("BattleManager", () => {
       bm.initBattle(player, opponent);
       bm.executePlayerAttack(0);
       const state = bm.executeAiAttack(3); // Iron Defense
-      const effLog = state.log.filter((m) => m.startsWith("[EFF]"));
-      const aiDefLog = effLog.find((m) => m.includes("EnemyMech"));
-      assert.ok(aiDefLog, "should log AI defense");
-      assert.ok(aiDefLog.includes("raised defense"));
+      const aiDefLog = state.log.find(
+        (m) =>
+          m.startsWith("[EFF]") &&
+          m.includes("EnemyMech") &&
+          m.includes("raised defense"),
+      );
+      assert.ok(aiDefLog, "should log AI defense with raised defense");
     });
 
     it("should log damage when AI deals damage", () => {
