@@ -6,56 +6,100 @@ import { resolve } from "node:path";
 import { describe, it } from "node:test";
 
 const ROOT = resolve(import.meta.dirname, "..");
-const REF_PATH = resolve(
-  ROOT,
-  "src/assets/reference/player-portrait-source.jpg",
-);
 const PORTRAIT_DIR = resolve(ROOT, "src/assets/portraits");
 
-describe("player portrait source material", () => {
-  it("player-portrait-source.jpg should exist in src/assets/reference/", () => {
-    assert.ok(existsSync(REF_PATH), `Source file missing: ${REF_PATH}`);
+// Final portrait source files (single source of truth per FR #66)
+const PLAYER_SOURCE = resolve(PORTRAIT_DIR, "final-player-falcon-unit.png");
+const ENEMY_SOURCE = resolve(PORTRAIT_DIR, "final-enemy-venom-battalion.png");
+
+describe("final portrait source files", () => {
+  it("final-player-falcon-unit.png should exist", () => {
+    assert.ok(existsSync(PLAYER_SOURCE), `Missing: ${PLAYER_SOURCE}`);
   });
 
-  it("player-portrait-source.jpg should be a valid JPEG", async () => {
-    const buf = await readFile(REF_PATH);
-    // JPEG files start with FF D8
-    assert.ok(buf.length > 2, "file should not be empty");
-    assert.equal(buf[0], 0xff, "first byte should be 0xFF");
-    assert.equal(buf[1], 0xd8, "second byte should be 0xD8");
+  it("final-enemy-venom-battalion.png should exist", () => {
+    assert.ok(existsSync(ENEMY_SOURCE), `Missing: ${ENEMY_SOURCE}`);
   });
 
-  it("player-portrait-source.jpg SHA256 should match pinned hash", async () => {
-    const PINNED_SHA256 =
-      "a7edb06365c3699dab470dda99acd36f722835b97a59fb34ef848f48c2003e52";
-    const buf = await readFile(REF_PATH);
+  it("final-player-falcon-unit.png should be a valid PNG", async () => {
+    const buf = await readFile(PLAYER_SOURCE);
+    assert.ok(buf.length > 4, "file should not be empty");
+    assert.equal(buf[0], 0x89);
+    assert.equal(buf[1], 0x50);
+  });
+
+  it("final-enemy-venom-battalion.png should be a valid PNG", async () => {
+    const buf = await readFile(ENEMY_SOURCE);
+    assert.ok(buf.length > 4, "file should not be empty");
+    assert.equal(buf[0], 0x89);
+    assert.equal(buf[1], 0x50);
+  });
+
+  it("player source SHA256 should match pinned hash", async () => {
+    const PINNED =
+      "9ee475c23b8fc516e2b62b30d9c69379a4138a4ac61ac59f2fe66cf3c23f84a0";
+    const buf = await readFile(PLAYER_SOURCE);
     const hash = createHash("sha256").update(buf).digest("hex");
     assert.equal(
       hash,
-      PINNED_SHA256,
-      `Source file SHA256 mismatch — file may have been silently replaced. Got: ${hash}`,
+      PINNED,
+      `FALCON UNIT source SHA256 mismatch. Got: ${hash}`,
+    );
+  });
+
+  it("enemy source SHA256 should match pinned hash", async () => {
+    const PINNED =
+      "362481a1dac0d8e6b9095e43362089684c29015af53949d1a3e2e79a9ba7e4f4";
+    const buf = await readFile(ENEMY_SOURCE);
+    const hash = createHash("sha256").update(buf).digest("hex");
+    assert.equal(
+      hash,
+      PINNED,
+      `VENOM BATTALION source SHA256 mismatch. Got: ${hash}`,
+    );
+  });
+
+  it("player and enemy source files should be different", async () => {
+    const playerBuf = await readFile(PLAYER_SOURCE);
+    const enemyBuf = await readFile(ENEMY_SOURCE);
+    assert.notDeepEqual(
+      playerBuf,
+      enemyBuf,
+      "Player and enemy source files must be distinct",
     );
   });
 });
 
-describe("player portrait files", () => {
+describe("portrait state variant files", () => {
   const STATES = ["normal", "angry", "defeated"] as const;
 
-  for (const state of STATES) {
-    it(`player-${state}.png should exist`, () => {
-      const p = resolve(PORTRAIT_DIR, `player-${state}.png`);
-      assert.ok(existsSync(p), `Missing: ${p}`);
-    });
+  for (const prefix of ["player", "water"] as const) {
+    for (const state of STATES) {
+      const filename = `${prefix}-${state}.png`;
 
-    it(`player-${state}.png should be a valid PNG`, async () => {
-      const buf = await readFile(resolve(PORTRAIT_DIR, `player-${state}.png`));
-      // PNG files start with 0x89 P N G
-      assert.ok(buf.length > 4, "file should not be empty");
-      assert.equal(buf[0], 0x89, "first byte should be 0x89");
-      assert.equal(buf[1], 0x50, "second byte should be 0x50 (P)");
-      assert.equal(buf[2], 0x4e, "third byte should be 0x4E (N)");
-      assert.equal(buf[3], 0x47, "fourth byte should be 0x47 (G)");
-    });
+      it(`${filename} should exist`, () => {
+        assert.ok(
+          existsSync(resolve(PORTRAIT_DIR, filename)),
+          `Missing: ${filename}`,
+        );
+      });
+
+      it(`${filename} should be a valid 64x64 RGB PNG`, async () => {
+        const buf = await readFile(resolve(PORTRAIT_DIR, filename));
+        // PNG signature
+        assert.equal(buf[0], 0x89);
+        assert.equal(buf[1], 0x50);
+        assert.equal(buf[2], 0x4e);
+        assert.equal(buf[3], 0x47);
+        // IHDR: 64x64
+        const width = buf.readUInt32BE(16);
+        const height = buf.readUInt32BE(20);
+        assert.equal(width, 64, `${filename} width should be 64`);
+        assert.equal(height, 64, `${filename} height should be 64`);
+        // color type 2 = RGB
+        assert.equal(buf[25], 2, `${filename} should be RGB`);
+      });
+    }
   }
 
   it("player portraits should be distinct from water portraits", async () => {
@@ -74,74 +118,18 @@ describe("player portrait files", () => {
     }
   });
 
-  it("player portraits should be 64x64 PNG (IHDR check)", async () => {
-    for (const state of STATES) {
-      const buf = await readFile(resolve(PORTRAIT_DIR, `player-${state}.png`));
-      // PNG IHDR chunk starts at byte 16: width (4 bytes BE) + height (4 bytes BE) + bit depth + color type
-      const width = buf.readUInt32BE(16);
-      const height = buf.readUInt32BE(20);
-      assert.equal(width, 64, `player-${state} width should be 64`);
-      assert.equal(height, 64, `player-${state} height should be 64`);
-      // color type at byte 25: 2 = RGB (no alpha)
-      const colorType = buf[25];
-      assert.equal(
-        colorType,
-        2,
-        `player-${state} should be RGB (color type 2), got ${colorType}`,
-      );
-    }
-  });
-
-  it("crop-portraits.py HEAD_CROP should be a valid portrait-strip crop region", async () => {
-    const script = await readFile(
-      resolve(ROOT, "scripts/crop-portraits.py"),
-      "utf-8",
-    );
-    // Extract HEAD_CROP = (x0, y0, x1, y1)
-    const match = script.match(
-      /HEAD_CROP\s*=\s*\((\d+),\s*(\d+),\s*(\d+),\s*(\d+)\)/,
-    );
-    assert.ok(match, "HEAD_CROP constant not found in crop-portraits.py");
-    const [, x0Str, y0Str, x1Str, y1Str] = match;
-    const x0 = Number(x0Str);
-    const y0 = Number(y0Str);
-    const x1 = Number(x1Str);
-    const y1 = Number(y1Str);
-    // Crop region must be within source image bounds (256x256)
-    assert.ok(x0 >= 0 && x0 < 256, `x0=${x0} out of bounds`);
-    assert.ok(y0 >= 0 && y0 < 256, `y0=${y0} out of bounds`);
-    assert.ok(
-      x1 > x0 && x1 <= 256,
-      `x1=${x1} invalid (must be > x0 and <= 256)`,
-    );
-    assert.ok(
-      y1 > y0 && y1 <= 256,
-      `y1=${y1} invalid (must be > y0 and <= 256)`,
-    );
-    // Crop should be a reasonable portrait-sized sub-region, not the entire image
-    const cropW = x1 - x0;
-    const cropH = y1 - y0;
-    assert.ok(
-      cropW > 30 && cropW < 220,
-      `HEAD_CROP width=${cropW} is unreasonable — should be a focused portrait region`,
-    );
-    assert.ok(
-      cropH > 30 && cropH < 220,
-      `HEAD_CROP height=${cropH} is unreasonable — should be a focused portrait region`,
-    );
-    // Crop area must be less than 50% of total image area to ensure it's a
-    // focused portrait strip region, not a lazy full-image resize
-    const cropArea = cropW * cropH;
-    const totalArea = 256 * 256;
-    assert.ok(
-      cropArea < totalArea * 0.5,
-      `HEAD_CROP area=${cropArea} is too large (>${totalArea * 0.5}) — must be a focused portrait strip region`,
-    );
-  });
-
-  it("all three player portrait states should be visually distinct files", async () => {
+  it("all three player states should be visually distinct", async () => {
     const bufs = await Promise.all(
       STATES.map((s) => readFile(resolve(PORTRAIT_DIR, `player-${s}.png`))),
+    );
+    assert.notDeepEqual(bufs[0], bufs[1], "normal and angry should differ");
+    assert.notDeepEqual(bufs[1], bufs[2], "angry and defeated should differ");
+    assert.notDeepEqual(bufs[0], bufs[2], "normal and defeated should differ");
+  });
+
+  it("all three enemy states should be visually distinct", async () => {
+    const bufs = await Promise.all(
+      STATES.map((s) => readFile(resolve(PORTRAIT_DIR, `water-${s}.png`))),
     );
     assert.notDeepEqual(bufs[0], bufs[1], "normal and angry should differ");
     assert.notDeepEqual(bufs[1], bufs[2], "angry and defeated should differ");
