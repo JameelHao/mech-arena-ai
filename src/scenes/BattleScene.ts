@@ -19,6 +19,8 @@ import {
   playMechAttack,
   playMechDamageFlash,
   preloadMechAssets,
+  showDamageNumber,
+  showSkillName,
 } from "../utils/MechGraphics";
 import {
   BATTLE_BG_TINT,
@@ -1064,6 +1066,11 @@ export class BattleScene extends Phaser.Scene {
       this.addLogMessage(msg);
     }
 
+    await showSkillName(
+      this,
+      playerSkill.name,
+      SKILL_COLORS[playerSkill.type] ?? COLORS.accent,
+    );
     await this.playAttackAnimation(true);
     await playAttackProjectile(
       this,
@@ -1072,19 +1079,32 @@ export class BattleScene extends Phaser.Scene {
       playerSkill.type,
     );
 
-    if (afterPlayer.opponent.hp < prevOpponentHp) {
+    const playerDmg = prevOpponentHp - afterPlayer.opponent.hp;
+    if (playerDmg > 0) {
+      const eff = playerLogs.some((m: string) => m.startsWith("[SUP]"))
+        ? "super"
+        : playerLogs.some((m: string) => m.startsWith("[RES]"))
+          ? "resist"
+          : "normal";
+      showDamageNumber(this, this.opponentMechSprite, playerDmg, eff);
       await Promise.all([
         playHitReaction(this, this.opponentMechSprite, playerSkill.type),
         this.playDamageFlash(true),
+        this.animateHP(
+          true,
+          afterPlayer.opponent.hp / afterPlayer.opponent.maxHp,
+          afterPlayer.opponent.hp,
+          afterPlayer.opponent.maxHp,
+        ),
       ]);
+    } else {
+      await this.animateHP(
+        true,
+        afterPlayer.opponent.hp / afterPlayer.opponent.maxHp,
+        afterPlayer.opponent.hp,
+        afterPlayer.opponent.maxHp,
+      );
     }
-
-    await this.animateHP(
-      true,
-      afterPlayer.opponent.hp / afterPlayer.opponent.maxHp,
-      afterPlayer.opponent.hp,
-      afterPlayer.opponent.maxHp,
-    );
 
     // Check if opponent defeated
     if (afterPlayer.winner === "player") {
@@ -1123,6 +1143,11 @@ export class BattleScene extends Phaser.Scene {
       this.addLogMessage(msg);
     }
 
+    await showSkillName(
+      this,
+      aiSkill.name,
+      SKILL_COLORS[aiSkill.type] ?? COLORS.accent,
+    );
     await this.playAttackAnimation(false);
     await playAttackProjectile(
       this,
@@ -1131,19 +1156,32 @@ export class BattleScene extends Phaser.Scene {
       aiSkill.type,
     );
 
-    if (afterAi.player.hp < prevPlayerHp) {
+    const aiDmg = prevPlayerHp - afterAi.player.hp;
+    if (aiDmg > 0) {
+      const eff = aiLogs.some((m: string) => m.startsWith("[SUP]"))
+        ? "super"
+        : aiLogs.some((m: string) => m.startsWith("[RES]"))
+          ? "resist"
+          : "normal";
+      showDamageNumber(this, this.playerMechSprite, aiDmg, eff);
       await Promise.all([
         playHitReaction(this, this.playerMechSprite, aiSkill.type),
         this.playDamageFlash(false),
+        this.animateHP(
+          false,
+          afterAi.player.hp / afterAi.player.maxHp,
+          afterAi.player.hp,
+          afterAi.player.maxHp,
+        ),
       ]);
+    } else {
+      await this.animateHP(
+        false,
+        afterAi.player.hp / afterAi.player.maxHp,
+        afterAi.player.hp,
+        afterAi.player.maxHp,
+      );
     }
-
-    await this.animateHP(
-      false,
-      afterAi.player.hp / afterAi.player.maxHp,
-      afterAi.player.hp,
-      afterAi.player.maxHp,
-    );
 
     // Check if player defeated
     if (afterAi.winner === "opponent") {

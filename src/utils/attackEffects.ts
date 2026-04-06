@@ -125,6 +125,9 @@ export function playHitReaction(
       onComplete: () => explosion.destroy(),
     });
 
+    // Camera shake for impact (guard for test environments without cameras)
+    scene.cameras?.main?.shake(150, 0.005);
+
     // Container shake (rapid X oscillation)
     const origX = target.container.x;
     scene.tweens.add({
@@ -137,6 +140,82 @@ export function playHitReaction(
       onComplete: () => {
         target.container.x = origX;
         resolve();
+      },
+    });
+  });
+}
+
+/**
+ * Show a floating damage number above a mech that drifts up and fades out.
+ */
+export function showDamageNumber(
+  scene: Phaser.Scene,
+  target: MechSprite,
+  damage: number,
+  effectiveness: "super" | "resist" | "normal",
+): void {
+  const colorMap = { super: "#ff6666", resist: "#66ccff", normal: "#ffd700" };
+  const color = colorMap[effectiveness];
+  const prefix = damage > 0 ? "-" : "";
+
+  const text = scene.add
+    .text(target.container.x, target.container.y - 30, `${prefix}${damage}`, {
+      fontSize: "22px",
+      color,
+      fontStyle: "bold",
+      stroke: "#000000",
+      strokeThickness: 3,
+    })
+    .setOrigin(0.5);
+
+  scene.tweens.add({
+    targets: text,
+    y: text.y - 40,
+    alpha: 0,
+    duration: 800,
+    ease: "Quad.easeOut",
+    onComplete: () => text.destroy(),
+  });
+}
+
+/**
+ * Flash a skill name at the center of the screen, then fade out.
+ */
+export function showSkillName(
+  scene: Phaser.Scene,
+  skillName: string,
+  color: string,
+): Promise<void> {
+  return new Promise((resolve) => {
+    const { width, height } = scene.scale;
+    const text = scene.add
+      .text(width / 2, height * 0.3, skillName, {
+        fontSize: "24px",
+        color,
+        fontStyle: "bold",
+        stroke: "#000000",
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5)
+      .setAlpha(0);
+
+    scene.tweens.add({
+      targets: text,
+      alpha: 1,
+      duration: 150,
+      ease: "Linear",
+      onComplete: () => {
+        scene.tweens.add({
+          targets: text,
+          alpha: 0,
+          duration: 450,
+          delay: 200,
+          ease: "Quad.easeIn",
+          onComplete: () => {
+            text.destroy();
+            resolve();
+          },
+        });
       },
     });
   });
