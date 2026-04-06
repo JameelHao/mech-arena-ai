@@ -73,7 +73,7 @@ describe("LOG_COLORS", () => {
 });
 
 describe("LOG_MAX_LINES", () => {
-  it("should be 8", () => {
-    assert.equal(LOG_MAX_LINES, 8);
+  it("should be 12", () => {
+    assert.equal(LOG_MAX_LINES, 12);
   });
 });

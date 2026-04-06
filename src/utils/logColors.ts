@@ -13,7 +13,7 @@ export const LOG_COLORS: Record<string, string> = {
   "[RES]": "#66ccff", // blue for not very effective
 };
 
-export const LOG_MAX_LINES = 8;
+export const LOG_MAX_LINES = 12;
 
 export interface ParsedLogMessage {
   displayMsg: string;
