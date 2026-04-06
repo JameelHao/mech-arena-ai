@@ -12,6 +12,7 @@ export interface BattleRecord {
   playerHpLeft: number;
   opponentHpLeft: number;
   prompt?: string;
+  battleLog?: string[];
 }
 
 export interface GameSettings {
