@@ -200,3 +200,15 @@ export async function clearOldBattles(): Promise<number> {
   }
   return clearOldBattlesLS();
 }
+
+// --- Onboarding ---
+
+const ONBOARDING_KEY = "mechArena_onboardingSeen";
+
+export function hasSeenOnboarding(): boolean {
+  return localStorage.getItem(ONBOARDING_KEY) === "true";
+}
+
+export function markOnboardingSeen(): void {
+  localStorage.setItem(ONBOARDING_KEY, "true");
+}
