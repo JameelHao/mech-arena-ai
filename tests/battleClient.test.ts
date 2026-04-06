@@ -35,7 +35,7 @@ function makeGameState(overrides?: Partial<BattleState>): BattleState {
       "[TURN]--- Battle Start ---",
       "[EFF]PlayerMech vs EnemyMech",
       "Choose your attack!",
-      "PlayerMech used Fire Blast!",
+      "[EFF]PlayerMech used Fire Blast!",
     ],
     turnCount: 1,
     winner: null,
@@ -81,7 +81,7 @@ describe("callBattleAPI", () => {
     assert.equal(body.mechPrompt, "test prompt");
     assert.equal(body.gameState.playerHP, 80);
     assert.equal(body.gameState.opponentHP, 60);
-    assert.equal(body.gameState.lastMove, "PlayerMech used Fire Blast!");
+    assert.equal(body.gameState.lastMove, "[EFF]PlayerMech used Fire Blast!");
   });
 
   it("should return null after max retries on network error", async () => {
@@ -140,9 +140,9 @@ describe("callBattleAPI", () => {
         "[TURN]--- Battle Start ---",
         "[EFF]PlayerMech vs EnemyMech",
         "Choose your attack!",
-        "PlayerMech used Fire Blast!",
+        "[EFF]PlayerMech used Fire Blast!",
         "It's not very effective...",
-        "EnemyMech used Water Cannon!",
+        "[EFF]EnemyMech used Water Cannon!",
       ],
     });
 
@@ -151,6 +151,6 @@ describe("callBattleAPI", () => {
     const body = JSON.parse(
       fetchMock.mock.calls[0].arguments[1]?.body as string,
     );
-    assert.equal(body.gameState.lastMove, "EnemyMech used Water Cannon!");
+    assert.equal(body.gameState.lastMove, "[EFF]EnemyMech used Water Cannon!");
   });
 });

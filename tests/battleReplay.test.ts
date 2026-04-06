@@ -20,7 +20,10 @@ function makeRecord(overrides?: Partial<BattleRecord>): BattleRecord {
 describe("BattleRecord battleLog field", () => {
   it("should support optional battleLog", () => {
     const record = makeRecord({
-      battleLog: ["[TURN]--- Battle Start ---", "Your Mech used Fire Blast!"],
+      battleLog: [
+        "[TURN]--- Battle Start ---",
+        "[EFF]Your Mech used Fire Blast!",
+      ],
     });
     assert.ok(Array.isArray(record.battleLog));
     assert.equal(record.battleLog?.length, 2);
@@ -34,7 +37,7 @@ describe("BattleRecord battleLog field", () => {
   it("should preserve log message order", () => {
     const logs = [
       "[TURN]--- Battle Start ---",
-      "Your Mech used Fire Blast!",
+      "[EFF]Your Mech used Fire Blast!",
       "[DMG]Enemy took 40 damage! HP: 60/100",
       "[SUP]It's super effective!",
     ];
@@ -79,8 +82,8 @@ describe("replay log parsing", () => {
   });
 
   it("should handle unprefixed messages with accent color", () => {
-    const { displayMsg, color } = parseLogMessage("Your Mech used Fire Blast!");
-    assert.equal(displayMsg, "Your Mech used Fire Blast!");
+    const { displayMsg, color } = parseLogMessage("Choose your attack!");
+    assert.equal(displayMsg, "Choose your attack!");
     assert.equal(color, "#00ff88");
   });
 });
@@ -107,7 +110,7 @@ describe("replay key event detection", () => {
   });
 
   it("should not mark normal attack as key event", () => {
-    assert.ok(!isKeyEvent("Your Mech used Fire Blast!"));
+    assert.ok(!isKeyEvent("[EFF]Your Mech used Fire Blast!"));
   });
 
   it("should not mark damage log as key event", () => {

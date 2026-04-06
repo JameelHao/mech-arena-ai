@@ -529,7 +529,7 @@ export class BattleScene extends Phaser.Scene {
     const logX = w * 0.03;
     const logY = h * 0.37;
     const logW = w * 0.44;
-    const logH = Math.min(h * 0.25, h - logY - 10);
+    const logH = Math.min(h * 0.35, h - logY - 10);
 
     const bg = this.add.graphics();
     bg.fillStyle(0x1a1a2e, 0.92);

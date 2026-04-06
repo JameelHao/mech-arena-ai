@@ -70,7 +70,7 @@ export class BattleManager {
       this.state.player,
       this.state.opponent,
     );
-    this.addLog(`${this.state.player.name} used ${playerSkill.name}!`);
+    this.addLog(`[EFF]${this.state.player.name} used ${playerSkill.name}!`);
     this.updateHP("opponent", playerDmg);
     if (playerSkill.type === "defense" || playerDmg === 0) {
       this.addLog(`[EFF]${this.state.player.name} raised defense!`);
@@ -102,7 +102,7 @@ export class BattleManager {
       this.state.opponent,
       this.state.player,
     );
-    this.addLog(`${this.state.opponent.name} used ${aiSkill.name}!`);
+    this.addLog(`[EFF]${this.state.opponent.name} used ${aiSkill.name}!`);
     this.updateHP("player", aiDmg);
     if (aiSkill.type === "defense" || aiDmg === 0) {
       this.addLog(`[EFF]${this.state.opponent.name} raised defense!`);
