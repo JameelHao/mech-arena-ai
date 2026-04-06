@@ -5,7 +5,7 @@
 import Phaser from "phaser";
 import { callBattleAPI } from "../api/battleClient";
 import { ASSET_REGISTRY } from "../assets";
-import { type Mech, type MechType, TurnPhase } from "../types/game";
+import { type MechType, TurnPhase } from "../types/game";
 import type { BattleRecord } from "../types/storage";
 import { BattleManager } from "../utils/BattleManager";
 import { getEffectiveness } from "../utils/BattleManager";
