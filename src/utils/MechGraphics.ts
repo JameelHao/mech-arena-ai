@@ -528,5 +528,6 @@ export {
   playAttackProjectile,
   playHitReaction,
   showDamageNumber,
+  showEffectivenessLabel,
   showSkillName,
 } from "./attackEffects";

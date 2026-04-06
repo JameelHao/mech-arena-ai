@@ -158,14 +158,25 @@ export function showDamageNumber(
   const color = colorMap[effectiveness];
   const prefix = damage > 0 ? "-" : "";
 
+  const multiplierSuffix =
+    effectiveness === "super"
+      ? " \u00D71.5"
+      : effectiveness === "resist"
+        ? " \u00D70.5"
+        : "";
   const text = scene.add
-    .text(target.container.x, target.container.y - 30, `${prefix}${damage}`, {
-      fontSize: "22px",
-      color,
-      fontStyle: "bold",
-      stroke: "#000000",
-      strokeThickness: 3,
-    })
+    .text(
+      target.container.x,
+      target.container.y - 30,
+      `${prefix}${damage}${multiplierSuffix}`,
+      {
+        fontSize: "22px",
+        color,
+        fontStyle: "bold",
+        stroke: "#000000",
+        strokeThickness: 3,
+      },
+    )
     .setOrigin(0.5);
 
   scene.tweens.add({
@@ -218,5 +229,40 @@ export function showSkillName(
         });
       },
     });
+  });
+}
+
+/**
+ * Show a floating effectiveness label below the damage number.
+ */
+export function showEffectivenessLabel(
+  scene: Phaser.Scene,
+  target: MechSprite,
+  effectiveness: "super" | "resist",
+): void {
+  const labelMap = {
+    super: { text: "Super Effective!", color: "#ff6666" },
+    resist: { text: "Not Very Effective...", color: "#66ccff" },
+  };
+  const { text: label, color } = labelMap[effectiveness];
+
+  const text = scene.add
+    .text(target.container.x, target.container.y + 5, label, {
+      fontSize: "14px",
+      color,
+      fontStyle: "bold",
+      stroke: "#000000",
+      strokeThickness: 2,
+    })
+    .setOrigin(0.5);
+
+  scene.tweens.add({
+    targets: text,
+    y: text.y - 20,
+    alpha: 0,
+    duration: 1000,
+    delay: 200,
+    ease: "Quad.easeOut",
+    onComplete: () => text.destroy(),
   });
 }
