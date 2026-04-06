@@ -5,7 +5,7 @@
 import Phaser from "phaser";
 import { callBattleAPI } from "../api/battleClient";
 import { ASSET_REGISTRY } from "../assets";
-import { type Mech, MechType, TurnPhase } from "../types/game";
+import { type Mech, type MechType, TurnPhase } from "../types/game";
 import type { BattleRecord } from "../types/storage";
 import { BattleManager } from "../utils/BattleManager";
 import { getEffectiveness } from "../utils/BattleManager";
@@ -89,31 +89,8 @@ const SKILL_COLORS: Record<string, string> = {
   defense: COLORS.defense,
 };
 
-const PLAYER_MECH: Mech = {
-  name: "Your Mech",
-  type: MechType.Fire,
-  hp: 100,
-  maxHp: 100,
-  skills: [
-    { name: "Fire Blast", type: MechType.Fire, damage: 40 },
-    { name: "Water Cannon", type: MechType.Water, damage: 30 },
-    { name: "Thunder Shock", type: MechType.Electric, damage: 25 },
-    { name: "Iron Defense", type: "defense", damage: 0 },
-  ],
-};
-
-const OPPONENT_MECH: Mech = {
-  name: "Enemy Mech",
-  type: MechType.Water,
-  hp: 100,
-  maxHp: 100,
-  skills: [
-    { name: "Water Cannon", type: MechType.Water, damage: 30 },
-    { name: "Fire Blast", type: MechType.Fire, damage: 40 },
-    { name: "Thunder Shock", type: MechType.Electric, damage: 25 },
-    { name: "Iron Defense", type: "defense", damage: 0 },
-  ],
-};
+// Mech definitions imported from shared module
+import { OPPONENT_MECH, PLAYER_MECH } from "../data/mechs";
 
 const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 const HP_TWEEN_DURATION = 500;
