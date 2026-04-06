@@ -1108,6 +1108,27 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
+  private showDefenseLabel(sprite: MechSprite): void {
+    const text = this.add
+      .text(sprite.container.x, sprite.container.y - 25, "DEF UP!", {
+        fontSize: "16px",
+        color: "#66ccff",
+        fontStyle: "bold",
+        stroke: "#000000",
+        strokeThickness: 3,
+      })
+      .setOrigin(0.5);
+
+    this.tweens.add({
+      targets: text,
+      y: text.y - 30,
+      alpha: 0,
+      duration: 700,
+      ease: "Quad.easeOut",
+      onComplete: () => text.destroy(),
+    });
+  }
+
   private playDamageFlash(targetIsOpponent: boolean): Promise<void> {
     const sprite = targetIsOpponent
       ? this.opponentMechSprite
@@ -1179,6 +1200,7 @@ export class BattleScene extends Phaser.Scene {
         ),
       ]);
     } else {
+      this.showDefenseLabel(this.playerMechSprite);
       await this.animateHP(
         true,
         afterPlayer.opponent.hp / afterPlayer.opponent.maxHp,
@@ -1271,6 +1293,7 @@ export class BattleScene extends Phaser.Scene {
         ),
       ]);
     } else {
+      this.showDefenseLabel(this.opponentMechSprite);
       await this.animateHP(
         false,
         afterAi.player.hp / afterAi.player.maxHp,
