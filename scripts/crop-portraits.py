@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """
-Crop player portrait assets from the portrait source reference image.
+Generate portrait state variants from final portrait source files.
 
-Source: src/assets/reference/player-portrait-source.jpg
-Output: src/assets/portraits/player-{normal,angry,defeated}.png
+Sources:
+  - src/assets/portraits/final-player-falcon-unit.png  (FALCON UNIT, player)
+  - src/assets/portraits/final-enemy-venom-battalion.png (VENOM BATTALION, enemy)
 
-Each portrait is 64x64 with a blue background/frame in portrait-strip style,
-matching the visual style of the enemy (water) portraits but with a distinct
-blue color scheme.
+Outputs:
+  - src/assets/portraits/player-{normal,angry,defeated}.png
+  - src/assets/portraits/water-{normal,angry,defeated}.png
+
+Each portrait is 64x64 RGB. State variants apply color/brightness effects.
 """
 
 import argparse
@@ -22,104 +25,68 @@ except ImportError:
     sys.exit(1)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SOURCE = REPO_ROOT / "src/assets/reference/player-portrait-source.jpg"
-OUTPUT_DIR = REPO_ROOT / "src/assets/portraits"
+PORTRAIT_DIR = REPO_ROOT / "src/assets/portraits"
 PROOF_DIR = REPO_ROOT / "docs"
 
-# Head crop region from source (determined by content analysis)
-HEAD_CROP = (123, 12, 255, 144)
-HEAD_SIZE = 58  # resize before placing on canvas
-FRAME_W = 3
-
-# Color schemes per state
-STYLES = {
-    "normal": {
-        "frame": (45, 65, 120),
-        "bg": (25, 40, 85),
-        "color_enhance": 1.0,
-        "brightness": 1.0,
-        "red_boost": 0,
-    },
-    "angry": {
-        "frame": (80, 50, 110),
-        "bg": (40, 30, 80),
-        "color_enhance": 1.4,
-        "brightness": 0.85,
-        "red_boost": 15,
-    },
-    "defeated": {
-        "frame": (35, 40, 60),
-        "bg": (20, 25, 45),
-        "color_enhance": 0.3,
-        "brightness": 0.5,
-        "red_boost": 0,
-    },
-}
+# Final portrait source files (single source of truth)
+PLAYER_SOURCE = PORTRAIT_DIR / "final-player-falcon-unit.png"
+ENEMY_SOURCE = PORTRAIT_DIR / "final-enemy-venom-battalion.png"
 
 
-def make_portrait(head_img: Image.Image, style: dict) -> Image.Image:
-    """Create a 64x64 portrait with colored background and frame."""
-    # Apply color/brightness adjustments to head
-    adjusted = head_img.copy()
-    if style["color_enhance"] != 1.0:
-        adjusted = ImageEnhance.Color(adjusted).enhance(style["color_enhance"])
-    if style["brightness"] != 1.0:
-        adjusted = ImageEnhance.Brightness(adjusted).enhance(style["brightness"])
+def make_state_variant(base: Image.Image, state: str) -> Image.Image:
+    """Apply state-specific visual effects to a 64x64 portrait."""
+    img = base.copy().convert("RGB")
 
-    # Build canvas with frame + background
-    canvas = Image.new("RGB", (64, 64), style["frame"])
-    draw = ImageDraw.Draw(canvas)
-    draw.rectangle([FRAME_W, FRAME_W, 63 - FRAME_W, 63 - FRAME_W], fill=style["bg"])
+    if state == "normal":
+        return img
 
-    # Remove black background from head via alpha masking
-    head_rgba = adjusted.convert("RGBA")
-    head_arr = np.array(head_rgba)
-    black_mask = np.all(head_arr[:, :, :3] < 25, axis=2)
-    head_arr[black_mask, 3] = 0
-    head_processed = Image.fromarray(head_arr)
+    if state == "angry":
+        img = ImageEnhance.Color(img).enhance(1.4)
+        img = ImageEnhance.Brightness(img).enhance(0.85)
+        arr = np.array(img).astype(np.float32)
+        arr[:, :, 0] = np.clip(arr[:, :, 0] * 1.2 + 15, 0, 255)
+        return Image.fromarray(arr.astype(np.uint8))
 
-    # Center head on canvas
-    ox = (64 - head_processed.width) // 2
-    oy = (64 - head_processed.height) // 2
-    canvas.paste(head_processed, (ox, oy), head_processed)
+    if state == "defeated":
+        img = ImageEnhance.Color(img).enhance(0.3)
+        img = ImageEnhance.Brightness(img).enhance(0.5)
+        return img
 
-    # Apply red boost for angry state
-    if style["red_boost"] > 0:
-        canvas_arr = np.array(canvas).astype(np.float32)
-        canvas_arr[:, :, 0] = np.clip(canvas_arr[:, :, 0] * 1.2 + style["red_boost"], 0, 255)
-        canvas = Image.fromarray(canvas_arr.astype(np.uint8))
-
-    return canvas
+    return img
 
 
-def generate_proof(src: Image.Image, portraits: dict[str, Image.Image]) -> None:
-    """Generate a proof image showing source, crop region, and resulting portraits."""
-    src_rgb = src.convert("RGB")
-    sw, sh = src_rgb.size
-
-    # Canvas: source (256) + gap (16) + portraits column (64*3 + gaps)
-    margin = 16
-    canvas_w = sw + margin + 64
-    canvas_h = max(sh, 64 * 3 + margin * 2)
+def generate_proof(
+    player_src: Image.Image,
+    enemy_src: Image.Image,
+    player_variants: dict[str, Image.Image],
+    enemy_variants: dict[str, Image.Image],
+) -> None:
+    """Generate proof image showing sources and all state variants."""
+    margin = 12
+    label_h = 16
+    # Layout: two rows (player + enemy), each with source + 3 variants
+    row_h = 64 + label_h
+    canvas_w = 64 + margin + 3 * (64 + margin)
+    canvas_h = 2 * row_h + margin
     canvas = Image.new("RGB", (canvas_w, canvas_h), (30, 30, 30))
-
-    # Draw source image
-    canvas.paste(src_rgb, (0, 0))
-
-    # Draw crop region rectangle on source
     draw = ImageDraw.Draw(canvas)
-    x0, y0, x1, y1 = HEAD_CROP
-    draw.rectangle([x0, y0, x1 - 1, y1 - 1], outline=(255, 0, 0), width=2)
 
-    # Draw label
-    draw.text((x0, max(0, y0 - 12)), "CROP", fill=(255, 0, 0))
+    # Player row
+    canvas.paste(player_src.convert("RGB").resize((64, 64)), (0, 0))
+    draw.text((0, 64), "FALCON UNIT", fill=(100, 180, 255))
+    for i, (state, variant) in enumerate(player_variants.items()):
+        x = 64 + margin + i * (64 + margin)
+        canvas.paste(variant, (x, 0))
+        draw.text((x, 64), state, fill=(200, 200, 200))
 
-    # Draw resulting portraits on the right
-    px = sw + margin
-    for i, (state, portrait) in enumerate(portraits.items()):
-        py = i * (64 + margin)
-        canvas.paste(portrait, (px, py))
-        draw.text((px, py + 66), state, fill=(200, 200, 200))
+    # Enemy row
+    y_off = row_h + margin
+    canvas.paste(enemy_src.convert("RGB").resize((64, 64)), (0, y_off))
+    draw.text((0, y_off + 64), "VENOM BTLN", fill=(255, 100, 100))
+    for i, (state, variant) in enumerate(enemy_variants.items()):
+        x = 64 + margin + i * (64 + margin)
+        canvas.paste(variant, (x, y_off))
+        draw.text((x, y_off + 64), state, fill=(200, 200, 200))
 
     PROOF_DIR.mkdir(parents=True, exist_ok=True)
     proof_path = PROOF_DIR / "portrait-crop-proof.png"
@@ -128,31 +95,40 @@ def generate_proof(src: Image.Image, portraits: dict[str, Image.Image]) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Crop player portraits from source.")
-    parser.add_argument("--proof", action="store_true", help="Generate crop proof image")
+    parser = argparse.ArgumentParser(description="Generate portrait state variants.")
+    parser.add_argument("--proof", action="store_true", help="Generate proof image")
     args = parser.parse_args()
 
-    if not SOURCE.exists():
-        print(f"Error: Source file not found: {SOURCE}")
-        sys.exit(1)
+    for src_path, label in [(PLAYER_SOURCE, "player"), (ENEMY_SOURCE, "enemy")]:
+        if not src_path.exists():
+            print(f"Error: {label} source not found: {src_path}")
+            sys.exit(1)
 
-    src = Image.open(SOURCE).convert("RGBA")
-    head = src.crop(HEAD_CROP).resize((HEAD_SIZE, HEAD_SIZE), Image.LANCZOS)
+    player_src = Image.open(PLAYER_SOURCE)
+    enemy_src = Image.open(ENEMY_SOURCE)
 
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    STATES = ["normal", "angry", "defeated"]
+    MAPPINGS = [
+        (player_src, "player", STATES),
+        (enemy_src, "water", STATES),
+    ]
 
-    portraits: dict[str, Image.Image] = {}
-    for state, style in STYLES.items():
-        portrait = make_portrait(head, style)
-        out_path = OUTPUT_DIR / f"player-{state}.png"
-        portrait.save(out_path)
-        portraits[state] = portrait
-        print(f"  {out_path.relative_to(REPO_ROOT)}: {portrait.size} {portrait.mode}")
+    player_variants: dict[str, Image.Image] = {}
+    enemy_variants: dict[str, Image.Image] = {}
+
+    for src_img, prefix, states in MAPPINGS:
+        variants = player_variants if prefix == "player" else enemy_variants
+        for state in states:
+            variant = make_state_variant(src_img, state)
+            out_path = PORTRAIT_DIR / f"{prefix}-{state}.png"
+            variant.save(out_path)
+            variants[state] = variant
+            print(f"  {out_path.relative_to(REPO_ROOT)}: {variant.size} {variant.mode}")
 
     if args.proof:
-        generate_proof(src, portraits)
+        generate_proof(player_src, enemy_src, player_variants, enemy_variants)
 
-    print("Done: all player portraits generated from portrait strip source.")
+    print("Done: all portraits generated from final source files.")
 
 
 if __name__ == "__main__":
