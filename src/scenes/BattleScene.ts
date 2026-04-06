@@ -5,7 +5,7 @@
 import Phaser from "phaser";
 import { callBattleAPI } from "../api/battleClient";
 import { ASSET_REGISTRY } from "../assets";
-import { type MechType, TurnPhase } from "../types/game";
+import { type Mech, type MechType, TurnPhase } from "../types/game";
 import type { BattleRecord } from "../types/storage";
 import { BattleManager } from "../utils/BattleManager";
 import { getEffectiveness } from "../utils/BattleManager";
@@ -157,6 +157,9 @@ export class BattleScene extends Phaser.Scene {
   private promptContainer?: HTMLDivElement;
   private mechPrompt = "";
 
+  // Selected player mech (set via init data or default)
+  private playerMech: Mech = PLAYER_MECH;
+
   // PWA banners (DOM elements)
   private offlineBanner?: HTMLDivElement;
   private updateBanner?: HTMLDivElement;
@@ -167,6 +170,10 @@ export class BattleScene extends Phaser.Scene {
   constructor() {
     super({ key: "BattleScene" });
     console.log("[BattleScene] constructor called");
+  }
+
+  init(data?: { selectedMech?: Mech }): void {
+    this.playerMech = data?.selectedMech ?? PLAYER_MECH;
   }
 
   preload(): void {
@@ -188,7 +195,7 @@ export class BattleScene extends Phaser.Scene {
     console.log("[BattleScene] create() start");
     this.battleManager = new BattleManager();
     this.battleManager.initBattle(
-      JSON.parse(JSON.stringify(PLAYER_MECH)),
+      JSON.parse(JSON.stringify(this.playerMech)),
       JSON.parse(JSON.stringify(OPPONENT_MECH)),
     );
 
@@ -397,7 +404,7 @@ export class BattleScene extends Phaser.Scene {
 
     this.playerMechSprite = createMechSprite(
       this,
-      PLAYER_MECH.type,
+      this.playerMech.type,
       spriteX,
       spriteY,
       spriteW,
@@ -421,7 +428,7 @@ export class BattleScene extends Phaser.Scene {
       const portraitX = panelX + panelW - 6 - portraitSize / 2;
       const portraitY = panelY + panelH / 2;
       this.playerPortrait = this.addPortrait(
-        PLAYER_MECH.type,
+        this.playerMech.type,
         this.playerPortraitState,
         portraitX,
         portraitY,
@@ -433,7 +440,7 @@ export class BattleScene extends Phaser.Scene {
       .text(
         panelX + 10,
         panelY + 6,
-        `${PLAYER_MECH.codename ?? PLAYER_MECH.name}  Lv.5`,
+        `${this.playerMech.codename ?? this.playerMech.name}  Lv.5`,
         {
           fontSize: `${Math.max(11, Math.floor(w * 0.018))}px`,
           color: COLORS.text,
@@ -982,7 +989,7 @@ export class BattleScene extends Phaser.Scene {
 
     if (newState === currentState || !portrait) return;
 
-    const mechType = isOpponent ? OPPONENT_MECH.type : PLAYER_MECH.type;
+    const mechType = isOpponent ? OPPONENT_MECH.type : this.playerMech.type;
     const states = PORTRAIT_TEXTURE_KEYS[mechType];
     if (!states) return;
     const entry = states[newState];
@@ -1126,7 +1133,7 @@ export class BattleScene extends Phaser.Scene {
     const afterPlayer = this.battleManager.executePlayerAttack(index);
     const playerLogs = afterPlayer.log.slice(prevLogLen);
 
-    const playerSkill = PLAYER_MECH.skills[index];
+    const playerSkill = this.playerMech.skills[index];
 
     this.setTurnIndicator(TurnPhase.PlayerTurn);
     for (const msg of playerLogs) {
@@ -1387,7 +1394,7 @@ export class BattleScene extends Phaser.Scene {
     const record: BattleRecord = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       timestamp: Date.now(),
-      playerMechType: PLAYER_MECH.type,
+      playerMechType: this.playerMech.type,
       opponentMechType: OPPONENT_MECH.type,
       result: won ? "win" : "loss",
       turns: state.turnCount,
@@ -1601,7 +1608,7 @@ export class BattleScene extends Phaser.Scene {
     this.playerPortraitState = "normal";
 
     this.battleManager.initBattle(
-      JSON.parse(JSON.stringify(PLAYER_MECH)),
+      JSON.parse(JSON.stringify(this.playerMech)),
       JSON.parse(JSON.stringify(OPPONENT_MECH)),
     );
 

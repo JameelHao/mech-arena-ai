@@ -4,7 +4,7 @@
 
 import Phaser from "phaser";
 import { ASSET_REGISTRY, preloadAllAssets } from "../assets";
-import { OPPONENT_MECH, PLAYER_MECH } from "../data/mechs";
+import { MECH_ROSTER, OPPONENT_MECH } from "../data/mechs";
 import { loadMechPrompt } from "../utils/storage";
 
 const COLORS = {
@@ -31,6 +31,8 @@ const TYPE_COLORS: Record<string, string> = {
 };
 
 export class LobbyScene extends Phaser.Scene {
+  private selectedIndex = 0;
+
   constructor() {
     super({ key: "LobbyScene" });
   }
@@ -40,9 +42,14 @@ export class LobbyScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.selectedIndex = 0;
     const { width: w, height: h } = this.scale;
     this.buildUI(w, h);
     this.scale.on("resize", this.handleResize, this);
+  }
+
+  private selectedMech() {
+    return MECH_ROSTER[this.selectedIndex];
   }
 
   private buildUI(w: number, h: number): void {
@@ -60,6 +67,9 @@ export class LobbyScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    // Mech roster selection
+    this.drawRosterSelection(w, h);
+
     // VS section
     this.drawMechPreview(w, h);
 
@@ -71,6 +81,50 @@ export class LobbyScene extends Phaser.Scene {
 
     // Buttons
     this.drawButtons(w, h);
+  }
+
+  private drawRosterSelection(w: number, h: number): void {
+    const cardW = Math.min(w * 0.25, 120);
+    const cardH = 32;
+    const gap = 8;
+    const totalW = MECH_ROSTER.length * (cardW + gap) - gap;
+    const startX = (w - totalW) / 2;
+    const y = h * 0.12;
+    const fontSize = `${Math.max(10, Math.floor(w * 0.014))}px`;
+
+    for (let i = 0; i < MECH_ROSTER.length; i++) {
+      const mech = MECH_ROSTER[i];
+      const x = startX + i * (cardW + gap);
+      const isSelected = i === this.selectedIndex;
+
+      const bg = this.add.graphics();
+      bg.fillStyle(isSelected ? 0x334433 : COLORS.buttonBg, 1);
+      bg.fillRoundedRect(x, y, cardW, cardH, 6);
+      bg.lineStyle(2, isSelected ? COLORS.accentHex : COLORS.panelBorder);
+      bg.strokeRoundedRect(x, y, cardW, cardH, 6);
+
+      const label = mech.codename ?? mech.name;
+      const color = isSelected
+        ? COLORS.accent
+        : (TYPE_COLORS[mech.type] ?? COLORS.text);
+      this.add
+        .text(x + cardW / 2, y + cardH / 2, label, {
+          fontSize,
+          color,
+          fontStyle: isSelected ? "bold" : "normal",
+        })
+        .setOrigin(0.5);
+
+      const zone = this.add
+        .zone(x, y, cardW, cardH)
+        .setOrigin(0)
+        .setInteractive({ useHandCursor: true });
+
+      zone.on("pointerdown", () => {
+        this.selectedIndex = i;
+        this.buildUI(w, h);
+      });
+    }
   }
 
   private drawMechPreview(w: number, h: number): void {
@@ -92,7 +146,7 @@ export class LobbyScene extends Phaser.Scene {
 
     // Player side
     const playerX = panelX + panelW * 0.25;
-    const playerPortrait = ASSET_REGISTRY.portraits[PLAYER_MECH.type];
+    const playerPortrait = ASSET_REGISTRY.portraits[this.selectedMech().type];
     if (playerPortrait) {
       const key = playerPortrait.normal.key;
       if (this.textures.exists(key)) {
@@ -102,23 +156,28 @@ export class LobbyScene extends Phaser.Scene {
     }
     const playerNameY = centerY + portraitSize / 2;
     this.add
-      .text(playerX, playerNameY, PLAYER_MECH.codename ?? PLAYER_MECH.name, {
-        fontSize,
-        color: TYPE_COLORS[PLAYER_MECH.type] ?? COLORS.text,
-        fontStyle: "bold",
-      })
+      .text(
+        playerX,
+        playerNameY,
+        this.selectedMech().codename ?? this.selectedMech().name,
+        {
+          fontSize,
+          color: TYPE_COLORS[this.selectedMech().type] ?? COLORS.text,
+          fontStyle: "bold",
+        },
+      )
       .setOrigin(0.5, 0);
-    if (PLAYER_MECH.role) {
+    if (this.selectedMech().role) {
       this.add
-        .text(playerX, playerNameY + 16, PLAYER_MECH.role, {
+        .text(playerX, playerNameY + 16, this.selectedMech().role as string, {
           fontSize: subFontSize,
           color: COLORS.dimText,
         })
         .setOrigin(0.5, 0);
     }
-    if (PLAYER_MECH.bio) {
+    if (this.selectedMech().bio) {
       this.add
-        .text(playerX, playerNameY + 30, PLAYER_MECH.bio, {
+        .text(playerX, playerNameY + 30, this.selectedMech().bio as string, {
           fontSize: `${Math.max(9, Math.floor(w * 0.012))}px`,
           color: "#777777",
           wordWrap: { width: panelW * 0.35 },
@@ -194,8 +253,8 @@ export class LobbyScene extends Phaser.Scene {
       })
       .setOrigin(0, 0);
 
-    for (let i = 0; i < PLAYER_MECH.skills.length; i++) {
-      const skill = PLAYER_MECH.skills[i];
+    for (let i = 0; i < this.selectedMech().skills.length; i++) {
+      const skill = this.selectedMech().skills[i];
       const y = panelY + lineH * (i + 1);
       const typeColor = TYPE_COLORS[skill.type] ?? COLORS.defense;
       const dmgText =
@@ -290,7 +349,9 @@ export class LobbyScene extends Phaser.Scene {
     });
     startZone.on("pointerdown", () => {
       this.scale.off("resize", this.handleResize, this);
-      this.scene.start("BattleScene");
+      this.scene.start("BattleScene", {
+        selectedMech: this.selectedMech(),
+      });
     });
 
     // History button
