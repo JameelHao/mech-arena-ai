@@ -524,4 +524,9 @@ export function playMechDamageFlash(
 }
 
 // Re-export attack effect functions from dedicated module
-export { playAttackProjectile, playHitReaction } from "./attackEffects";
+export {
+  playAttackProjectile,
+  playHitReaction,
+  showDamageNumber,
+  showSkillName,
+} from "./attackEffects";
