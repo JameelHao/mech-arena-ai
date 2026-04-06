@@ -9,14 +9,8 @@ const ROOT = resolve(import.meta.dirname, "..");
 const PORTRAIT_DIR = resolve(ROOT, "src/assets/portraits");
 
 // Final portrait source files (single source of truth per FR #66)
-const PLAYER_SOURCE = resolve(
-  PORTRAIT_DIR,
-  "final-player-falcon-unit.png",
-);
-const ENEMY_SOURCE = resolve(
-  PORTRAIT_DIR,
-  "final-enemy-venom-battalion.png",
-);
+const PLAYER_SOURCE = resolve(PORTRAIT_DIR, "final-player-falcon-unit.png");
+const ENEMY_SOURCE = resolve(PORTRAIT_DIR, "final-enemy-venom-battalion.png");
 
 describe("final portrait source files", () => {
   it("final-player-falcon-unit.png should exist", () => {
