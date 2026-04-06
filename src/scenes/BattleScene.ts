@@ -238,6 +238,18 @@ export class BattleScene extends Phaser.Scene {
     for (const msg of state.log) {
       this.addLogMessage(msg);
     }
+
+    // Show strategy status in log
+    if (this.mechPrompt.trim()) {
+      const summary =
+        this.mechPrompt.length > 40
+          ? `${this.mechPrompt.slice(0, 37)}...`
+          : this.mechPrompt;
+      this.addLogMessage(`[EFF]Strategy: ${summary}`);
+    } else {
+      this.addLogMessage("[TURN]Tip: Save a strategy to guide your AI!");
+    }
+
     this.setTurnIndicator(state.phase);
 
     this.scale.on("resize", this.handleResize, this);
@@ -683,6 +695,7 @@ export class BattleScene extends Phaser.Scene {
       saveMechPrompt(this.mechPrompt);
       saveBtn.textContent = "Saved!";
       saveBtn.style.background = "#0a5";
+      this.addLogMessage("[EFF]Strategy updated!");
       setTimeout(() => {
         saveBtn.textContent = "Save";
         saveBtn.style.background = "#0f8";
@@ -1448,11 +1461,27 @@ export class BattleScene extends Phaser.Scene {
       .setOrigin(0.5);
     this.resultOverlay.add(summary);
 
+    // Strategy used
+    const strategyLabel = this.mechPrompt.trim()
+      ? this.mechPrompt.length > 50
+        ? `Strategy: ${this.mechPrompt.slice(0, 47)}...`
+        : `Strategy: ${this.mechPrompt}`
+      : "No strategy used";
+    const strategyColor = this.mechPrompt.trim() ? COLORS.accent : "#666666";
+    const strategyText = this.add
+      .text(w / 2, h * 0.52, strategyLabel, {
+        fontSize: `${Math.max(10, Math.floor(w * 0.015))}px`,
+        color: strategyColor,
+        wordWrap: { width: w * 0.6 },
+      })
+      .setOrigin(0.5);
+    this.resultOverlay.add(strategyText);
+
     // Play Again button
     const btnW = Math.min(w * 0.3, 200);
     const btnH = 44;
     const btnX = w / 2 - btnW / 2;
-    const btnY = h * 0.55;
+    const btnY = h * 0.58;
 
     const btnBg = this.add.graphics();
     btnBg.fillStyle(COLORS.accentHex, 1);
