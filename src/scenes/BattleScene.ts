@@ -1100,6 +1100,20 @@ export class BattleScene extends Phaser.Scene {
     return playMechAttack(this, sprite, isPlayer);
   }
 
+  private playDefeatAnimation(sprite: MechSprite): Promise<void> {
+    return new Promise((resolve) => {
+      this.tweens.add({
+        targets: sprite.container,
+        angle: 90,
+        alpha: 0,
+        y: sprite.container.y + 30,
+        duration: 500,
+        ease: "Quad.easeIn",
+        onComplete: () => resolve(),
+      });
+    });
+  }
+
   private playDamageFlash(targetIsOpponent: boolean): Promise<void> {
     const sprite = targetIsOpponent
       ? this.opponentMechSprite
@@ -1182,6 +1196,7 @@ export class BattleScene extends Phaser.Scene {
     // Check if opponent defeated
     if (afterPlayer.winner === "player") {
       this.setTurnIndicator(TurnPhase.BattleOver);
+      await this.playDefeatAnimation(this.opponentMechSprite);
       this.showResultScreen(true);
       return;
     }
@@ -1273,6 +1288,7 @@ export class BattleScene extends Phaser.Scene {
     // Check if player defeated
     if (afterAi.winner === "opponent") {
       this.setTurnIndicator(TurnPhase.BattleOver);
+      await this.playDefeatAnimation(this.playerMechSprite);
       this.showResultScreen(false);
       return;
     }
@@ -1405,9 +1421,9 @@ export class BattleScene extends Phaser.Scene {
 
     this.resultOverlay = this.add.container(0, 0);
 
-    // Dark overlay
+    // Tinted overlay (green for victory, red for defeat)
     const bg = this.add.graphics();
-    bg.fillStyle(0x000000, 0.75);
+    bg.fillStyle(won ? 0x002211 : 0x220000, 0.8);
     bg.fillRect(0, 0, w, h);
     this.resultOverlay.add(bg);
 
