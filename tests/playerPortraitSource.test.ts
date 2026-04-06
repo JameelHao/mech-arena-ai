@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -22,6 +23,18 @@ describe("player portrait source material", () => {
     assert.ok(buf.length > 2, "file should not be empty");
     assert.equal(buf[0], 0xff, "first byte should be 0xFF");
     assert.equal(buf[1], 0xd8, "second byte should be 0xD8");
+  });
+
+  it("player-portrait-source.jpg SHA256 should match pinned hash", async () => {
+    const PINNED_SHA256 =
+      "a7edb06365c3699dab470dda99acd36f722835b97a59fb34ef848f48c2003e52";
+    const buf = await readFile(REF_PATH);
+    const hash = createHash("sha256").update(buf).digest("hex");
+    assert.equal(
+      hash,
+      PINNED_SHA256,
+      `Source file SHA256 mismatch — file may have been silently replaced. Got: ${hash}`,
+    );
   });
 });
 
@@ -77,6 +90,53 @@ describe("player portrait files", () => {
         `player-${state} should be RGB (color type 2), got ${colorType}`,
       );
     }
+  });
+
+  it("crop-portraits.py HEAD_CROP should be a valid portrait-strip crop region", async () => {
+    const script = await readFile(
+      resolve(ROOT, "scripts/crop-portraits.py"),
+      "utf-8",
+    );
+    // Extract HEAD_CROP = (x0, y0, x1, y1)
+    const match = script.match(
+      /HEAD_CROP\s*=\s*\((\d+),\s*(\d+),\s*(\d+),\s*(\d+)\)/,
+    );
+    assert.ok(match, "HEAD_CROP constant not found in crop-portraits.py");
+    const [, x0Str, y0Str, x1Str, y1Str] = match;
+    const x0 = Number(x0Str);
+    const y0 = Number(y0Str);
+    const x1 = Number(x1Str);
+    const y1 = Number(y1Str);
+    // Crop region must be within source image bounds (256x256)
+    assert.ok(x0 >= 0 && x0 < 256, `x0=${x0} out of bounds`);
+    assert.ok(y0 >= 0 && y0 < 256, `y0=${y0} out of bounds`);
+    assert.ok(
+      x1 > x0 && x1 <= 256,
+      `x1=${x1} invalid (must be > x0 and <= 256)`,
+    );
+    assert.ok(
+      y1 > y0 && y1 <= 256,
+      `y1=${y1} invalid (must be > y0 and <= 256)`,
+    );
+    // Crop should be a reasonable portrait-sized sub-region, not the entire image
+    const cropW = x1 - x0;
+    const cropH = y1 - y0;
+    assert.ok(
+      cropW > 30 && cropW < 220,
+      `HEAD_CROP width=${cropW} is unreasonable — should be a focused portrait region`,
+    );
+    assert.ok(
+      cropH > 30 && cropH < 220,
+      `HEAD_CROP height=${cropH} is unreasonable — should be a focused portrait region`,
+    );
+    // Crop area must be less than 50% of total image area to ensure it's a
+    // focused portrait strip region, not a lazy full-image resize
+    const cropArea = cropW * cropH;
+    const totalArea = 256 * 256;
+    assert.ok(
+      cropArea < totalArea * 0.5,
+      `HEAD_CROP area=${cropArea} is too large (>${totalArea * 0.5}) — must be a focused portrait strip region`,
+    );
   });
 
   it("all three player portrait states should be visually distinct files", async () => {

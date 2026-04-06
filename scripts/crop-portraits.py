@@ -10,6 +10,7 @@ matching the visual style of the enemy (water) portraits but with a distinct
 blue color scheme.
 """
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -23,6 +24,7 @@ except ImportError:
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SOURCE = REPO_ROOT / "src/assets/reference/player-portrait-source.jpg"
 OUTPUT_DIR = REPO_ROOT / "src/assets/portraits"
+PROOF_DIR = REPO_ROOT / "docs"
 
 # Head crop region from source (determined by content analysis)
 HEAD_CROP = (123, 12, 255, 144)
@@ -90,7 +92,46 @@ def make_portrait(head_img: Image.Image, style: dict) -> Image.Image:
     return canvas
 
 
+def generate_proof(src: Image.Image, portraits: dict[str, Image.Image]) -> None:
+    """Generate a proof image showing source, crop region, and resulting portraits."""
+    src_rgb = src.convert("RGB")
+    sw, sh = src_rgb.size
+
+    # Canvas: source (256) + gap (16) + portraits column (64*3 + gaps)
+    margin = 16
+    canvas_w = sw + margin + 64
+    canvas_h = max(sh, 64 * 3 + margin * 2)
+    canvas = Image.new("RGB", (canvas_w, canvas_h), (30, 30, 30))
+
+    # Draw source image
+    canvas.paste(src_rgb, (0, 0))
+
+    # Draw crop region rectangle on source
+    draw = ImageDraw.Draw(canvas)
+    x0, y0, x1, y1 = HEAD_CROP
+    draw.rectangle([x0, y0, x1 - 1, y1 - 1], outline=(255, 0, 0), width=2)
+
+    # Draw label
+    draw.text((x0, max(0, y0 - 12)), "CROP", fill=(255, 0, 0))
+
+    # Draw resulting portraits on the right
+    px = sw + margin
+    for i, (state, portrait) in enumerate(portraits.items()):
+        py = i * (64 + margin)
+        canvas.paste(portrait, (px, py))
+        draw.text((px, py + 66), state, fill=(200, 200, 200))
+
+    PROOF_DIR.mkdir(parents=True, exist_ok=True)
+    proof_path = PROOF_DIR / "portrait-crop-proof.png"
+    canvas.save(proof_path)
+    print(f"  Proof image saved: {proof_path.relative_to(REPO_ROOT)}")
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Crop player portraits from source.")
+    parser.add_argument("--proof", action="store_true", help="Generate crop proof image")
+    args = parser.parse_args()
+
     if not SOURCE.exists():
         print(f"Error: Source file not found: {SOURCE}")
         sys.exit(1)
@@ -100,11 +141,16 @@ def main() -> None:
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+    portraits: dict[str, Image.Image] = {}
     for state, style in STYLES.items():
         portrait = make_portrait(head, style)
         out_path = OUTPUT_DIR / f"player-{state}.png"
         portrait.save(out_path)
+        portraits[state] = portrait
         print(f"  {out_path.relative_to(REPO_ROOT)}: {portrait.size} {portrait.mode}")
+
+    if args.proof:
+        generate_proof(src, portraits)
 
     print("Done: all player portraits generated from portrait strip source.")
 
