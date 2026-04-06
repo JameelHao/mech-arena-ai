@@ -5,12 +5,14 @@
 import Phaser from "phaser";
 import { ASSET_REGISTRY, preloadAllAssets } from "../assets";
 import { MECH_ROSTER, OPPONENT_MECH } from "../data/mechs";
+import { STRATEGY_TEMPLATES } from "../data/strategies";
 import {
   hasSeenOnboarding,
   hasStarterMech,
   loadMechPrompt,
   loadStarterMech,
   markOnboardingSeen,
+  saveMechPrompt,
   saveStarterMech,
 } from "../utils/storage";
 
@@ -601,6 +603,153 @@ export class LobbyScene extends Phaser.Scene {
       this.selectedIndex = bindingIndex;
       overlay.destroy();
       this.buildUI(w, h);
+      this.showStrategyPicker();
+    });
+    overlay.add(confirmZone);
+  }
+
+  // --- Strategy Picker ---
+
+  private showStrategyPicker(): void {
+    const { width: w, height: h } = this.scale;
+    const overlay = this.add.container(0, 0);
+
+    // Backdrop
+    const bg = this.add.graphics();
+    bg.fillStyle(0x000000, 0.9);
+    bg.fillRect(0, 0, w, h);
+    overlay.add(bg);
+
+    // Title
+    overlay.add(
+      this.add
+        .text(w / 2, h * 0.06, "CHOOSE YOUR STRATEGY", {
+          fontSize: `${Math.max(20, Math.floor(w * 0.035))}px`,
+          color: COLORS.accent,
+          fontStyle: "bold",
+        })
+        .setOrigin(0.5),
+    );
+
+    overlay.add(
+      this.add
+        .text(w / 2, h * 0.11, "Pick a battle style to start with", {
+          fontSize: `${Math.max(12, Math.floor(w * 0.018))}px`,
+          color: "#888888",
+        })
+        .setOrigin(0.5),
+    );
+
+    let pickerIndex = 0;
+    const cardW = Math.min(w * 0.85, 400);
+    const cardH = Math.max(70, h * 0.14);
+    const cardX = (w - cardW) / 2;
+    const startY = h * 0.17;
+    const gap = 10;
+    const fontSize = `${Math.max(13, Math.floor(w * 0.02))}px`;
+    const subFont = `${Math.max(10, Math.floor(w * 0.014))}px`;
+
+    const drawCards = () => {
+      for (const obj of overlay.list.filter((o) =>
+        (o as Phaser.GameObjects.GameObject).getData("scard"),
+      )) {
+        obj.destroy();
+      }
+
+      for (let i = 0; i < STRATEGY_TEMPLATES.length; i++) {
+        const tmpl = STRATEGY_TEMPLATES[i];
+        const y = startY + i * (cardH + gap);
+        const isSelected = i === pickerIndex;
+
+        const cardBg = this.add.graphics();
+        cardBg.setData("scard", true);
+        cardBg.fillStyle(isSelected ? 0x1a2a3a : COLORS.panelBg, 1);
+        cardBg.fillRoundedRect(cardX, y, cardW, cardH, 8);
+        cardBg.lineStyle(2, isSelected ? COLORS.accentHex : COLORS.panelBorder);
+        cardBg.strokeRoundedRect(cardX, y, cardW, cardH, 8);
+        overlay.add(cardBg);
+
+        // Icon + Name
+        overlay.add(
+          this.add
+            .text(cardX + 15, y + 10, `${tmpl.icon}  ${tmpl.name}`, {
+              fontSize,
+              color: isSelected ? COLORS.accent : COLORS.text,
+              fontStyle: "bold",
+            })
+            .setData("scard", true),
+        );
+
+        // Prompt preview
+        const preview =
+          tmpl.prompt.length > 80
+            ? `${tmpl.prompt.slice(0, 77)}...`
+            : tmpl.prompt;
+        overlay.add(
+          this.add
+            .text(cardX + 15, y + 32, preview, {
+              fontSize: subFont,
+              color: "#888888",
+              wordWrap: { width: cardW - 30 },
+            })
+            .setData("scard", true),
+        );
+
+        const zone = this.add
+          .zone(cardX, y, cardW, cardH)
+          .setOrigin(0)
+          .setInteractive({ useHandCursor: true })
+          .setData("scard", true);
+
+        zone.on("pointerdown", () => {
+          pickerIndex = i;
+          drawCards();
+        });
+        overlay.add(zone);
+      }
+    };
+
+    drawCards();
+
+    // Confirm button
+    const btnW = Math.min(w * 0.5, 220);
+    const btnH = 44;
+    const btnX = w / 2 - btnW / 2;
+    const btnY = startY + STRATEGY_TEMPLATES.length * (cardH + gap) + 12;
+
+    const confirmBg = this.add.graphics();
+    confirmBg.fillStyle(COLORS.accentHex, 1);
+    confirmBg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
+    overlay.add(confirmBg);
+
+    overlay.add(
+      this.add
+        .text(w / 2, btnY + btnH / 2, "Use This Strategy", {
+          fontSize: `${Math.max(15, Math.floor(w * 0.023))}px`,
+          color: "#000000",
+          fontStyle: "bold",
+        })
+        .setOrigin(0.5),
+    );
+
+    const confirmZone = this.add
+      .zone(btnX, btnY, btnW, btnH)
+      .setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+
+    confirmZone.on("pointerover", () => {
+      confirmBg.clear();
+      confirmBg.fillStyle(0x00cc66, 1);
+      confirmBg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
+    });
+    confirmZone.on("pointerout", () => {
+      confirmBg.clear();
+      confirmBg.fillStyle(COLORS.accentHex, 1);
+      confirmBg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
+    });
+    confirmZone.on("pointerdown", () => {
+      saveMechPrompt(STRATEGY_TEMPLATES[pickerIndex].prompt);
+      overlay.destroy();
 
       if (!hasSeenOnboarding()) {
         this.showOnboarding();
