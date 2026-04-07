@@ -23,6 +23,6 @@ export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
     name: "Defensive",
     icon: "\uD83D\uDEE1\uFE0F",
     prompt:
-      "Prioritize survival. Use Iron Defense frequently to build up shields. Only attack when HP is above 60%. Prefer resisted attacks over risky super-effective moves.",
+      "Prioritize survival. Use Reactive Armor frequently to build up shields. Only attack when HP is above 60%. Prefer resisted attacks over risky super-effective moves.",
   },
 ];

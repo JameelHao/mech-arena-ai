@@ -14,10 +14,10 @@ function makeMech(
     hp,
     maxHp: hp,
     skills: [
-      { name: "Fire Blast", type: MechType.Kinetic, damage: 40 },
-      { name: "Water Cannon", type: MechType.Beam, damage: 30 },
-      { name: "Thunder Shock", type: MechType.Emp, damage: 25 },
-      { name: "Iron Defense", type: "defense", damage: 0 },
+      { name: "Railgun Salvo", type: MechType.Kinetic, damage: 40 },
+      { name: "Plasma Beam", type: MechType.Beam, damage: 30 },
+      { name: "EMP Pulse", type: MechType.Emp, damage: 25 },
+      { name: "Reactive Armor", type: "defense", damage: 0 },
     ],
   };
 }
@@ -101,7 +101,7 @@ describe("BattleManager", () => {
   describe("calculateDamage", () => {
     it("should apply super effective multiplier", () => {
       bm.initBattle(player, opponent);
-      const skill = { name: "Water Cannon", type: MechType.Beam, damage: 30 };
+      const skill = { name: "Plasma Beam", type: MechType.Beam, damage: 30 };
       // Water vs Fire defender → 1.5x → 45
       const fireMech = makeMech("Fire", MechType.Kinetic);
       const dmg = bm.calculateDamage(skill, opponent, fireMech);
@@ -110,7 +110,11 @@ describe("BattleManager", () => {
 
     it("should apply not-effective multiplier", () => {
       bm.initBattle(player, opponent);
-      const skill = { name: "Fire Blast", type: MechType.Kinetic, damage: 40 };
+      const skill = {
+        name: "Railgun Salvo",
+        type: MechType.Kinetic,
+        damage: 40,
+      };
       // Fire vs Water defender → 0.5x → 20
       const waterMech = makeMech("Water", MechType.Beam);
       const dmg = bm.calculateDamage(skill, player, waterMech);
@@ -120,7 +124,7 @@ describe("BattleManager", () => {
     it("defense skill should deal 0 damage", () => {
       bm.initBattle(player, opponent);
       const skill = {
-        name: "Iron Defense",
+        name: "Reactive Armor",
         type: "defense" as const,
         damage: 0,
       };
