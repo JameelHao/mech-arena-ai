@@ -3,6 +3,7 @@ import { beforeEach, describe, it } from "node:test";
 import {
   buildPrompt,
   isRateLimited,
+  mockBattleResponse,
   parseResponse,
   rateLimitMap,
 } from "../api/battle.ts";
@@ -101,5 +102,71 @@ describe("isRateLimited", () => {
     // Stale entries should be evicted
     assert.ok(rateLimitMap.size < 10001);
     assert.ok(rateLimitMap.has("fresh-ip"));
+  });
+});
+
+describe("mockBattleResponse", () => {
+  const makeRequest = (playerHP = 100, opponentHP = 100) => ({
+    mechPrompt: "test",
+    gameState: {
+      playerHP,
+      opponentHP,
+      lastMove: "",
+      statusEffects: [] as string[],
+    },
+  });
+
+  it("should return a valid move (0-3)", () => {
+    const result = mockBattleResponse(makeRequest());
+    assert.ok(result.move >= 0 && result.move <= 3);
+  });
+
+  it("should include [MOCK] prefix in reasoning", () => {
+    const result = mockBattleResponse(makeRequest());
+    assert.ok(result.reasoning?.includes("[MOCK]"));
+  });
+
+  it("should return reasoning string", () => {
+    const result = mockBattleResponse(makeRequest());
+    assert.ok(typeof result.reasoning === "string");
+    assert.ok(result.reasoning.length > 0);
+  });
+
+  it("should favor defense when HP is critical", () => {
+    let defenseCount = 0;
+    const runs = 100;
+    for (let i = 0; i < runs; i++) {
+      const result = mockBattleResponse(makeRequest(20));
+      if (result.move === 3) defenseCount++;
+    }
+    // With 50% chance at HP<30%, expect ~50 out of 100
+    assert.ok(
+      defenseCount > 20,
+      `Expected more defense at low HP, got ${defenseCount}/100`,
+    );
+  });
+
+  it("should mostly pick attack skills at full HP", () => {
+    let attackCount = 0;
+    const runs = 100;
+    for (let i = 0; i < runs; i++) {
+      const result = mockBattleResponse(makeRequest(100));
+      if (result.move < 3) attackCount++;
+    }
+    // At full HP, defense weight is only 0.1 → ~90% attack
+    assert.ok(
+      attackCount > 70,
+      `Expected more attacks at full HP, got ${attackCount}/100`,
+    );
+  });
+
+  it("should return all 4 possible moves over many runs", () => {
+    const seen = new Set<number>();
+    for (let i = 0; i < 200; i++) {
+      // Mix low and high HP to cover both branches
+      const hp = i % 2 === 0 ? 100 : 20;
+      seen.add(mockBattleResponse(makeRequest(hp)).move);
+    }
+    assert.equal(seen.size, 4, "All 4 moves should be reachable");
   });
 });

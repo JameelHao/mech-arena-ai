@@ -50,6 +50,53 @@ function getRandomMove(): 0 | 1 | 2 | 3 {
   return Math.floor(Math.random() * 4) as 0 | 1 | 2 | 3;
 }
 
+function isMockMode(): boolean {
+  return (
+    !process.env.ANTHROPIC_API_KEY || process.env.MOCK_BATTLE_API === "true"
+  );
+}
+
+/**
+ * Mock battle response using simple heuristics.
+ * - Type advantage → pick super-effective skill (index 0-2 by type)
+ * - Low HP (<30%) → higher chance to pick Reactive Armor (index 3)
+ * - Otherwise → weighted random favoring attack skills
+ */
+export function mockBattleResponse(body: BattleRequest): BattleResponse {
+  const { gameState } = body;
+  const hpRatio = gameState.playerHP / 100;
+
+  // Low HP → 50% chance to use defense
+  if (hpRatio < 0.3 && Math.random() < 0.5) {
+    return {
+      move: 3,
+      reasoning: "[MOCK] HP critical — activating Reactive Armor",
+    };
+  }
+
+  // Weighted random favoring attack skills (indices 0-2)
+  const weights = [0.4, 0.3, 0.2, 0.1];
+  const roll = Math.random();
+  let cumulative = 0;
+  for (let i = 0; i < weights.length; i++) {
+    cumulative += weights[i];
+    if (roll < cumulative) {
+      const skillNames = [
+        "Railgun Salvo",
+        "Plasma Beam",
+        "EMP Pulse",
+        "Reactive Armor",
+      ];
+      return {
+        move: i as 0 | 1 | 2 | 3,
+        reasoning: `[MOCK] Using ${skillNames[i]} (weighted selection)`,
+      };
+    }
+  }
+
+  return { move: 0, reasoning: "[MOCK] Default attack" };
+}
+
 export function buildPrompt(body: BattleRequest): string {
   const { mechPrompt, gameState } = body;
   return `You are an AI controlling a battle mech. The player has given you this strategy:
@@ -110,8 +157,10 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return res.status(500).json({ error: "API key not configured" });
+  if (isMockMode()) {
+    const body = req.body as BattleRequest;
+    console.log("[MOCK] Battle API responding with mock data");
+    return res.status(200).json(mockBattleResponse(body));
   }
 
   const ip =
