@@ -10,16 +10,16 @@ import type { MechSprite } from "./MechGraphics";
 // ─── Projectile colors per skill type ────────────────────────────────────────
 
 const PROJECTILE_COLORS: Record<string, { core: number; glow: number }> = {
-  [MechType.Fire]: { core: 0xff4500, glow: 0xff6b35 },
-  [MechType.Water]: { core: 0x1e90ff, glow: 0x4db8ff },
-  [MechType.Electric]: { core: 0xffd700, glow: 0xffed4a },
+  [MechType.Kinetic]: { core: 0xff4500, glow: 0xff6b35 },
+  [MechType.Beam]: { core: 0x1e90ff, glow: 0x4db8ff },
+  [MechType.Emp]: { core: 0xffd700, glow: 0xffed4a },
   defense: { core: 0x888888, glow: 0xaaaaaa },
 };
 
 const EXPLOSION_COLORS: Record<string, { inner: number; outer: number }> = {
-  [MechType.Fire]: { inner: 0xffaa00, outer: 0xff4500 },
-  [MechType.Water]: { inner: 0x66ccff, outer: 0x1e90ff },
-  [MechType.Electric]: { inner: 0xffff66, outer: 0xffd700 },
+  [MechType.Kinetic]: { inner: 0xffaa00, outer: 0xff4500 },
+  [MechType.Beam]: { inner: 0x66ccff, outer: 0x1e90ff },
+  [MechType.Emp]: { inner: 0xffff66, outer: 0xffd700 },
   defense: { inner: 0xcccccc, outer: 0x888888 },
 };
 

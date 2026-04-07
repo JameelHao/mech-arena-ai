@@ -14,9 +14,9 @@ function makeMech(
     hp,
     maxHp: hp,
     skills: [
-      { name: "Fire Blast", type: MechType.Fire, damage: 40 },
-      { name: "Water Cannon", type: MechType.Water, damage: 30 },
-      { name: "Thunder Shock", type: MechType.Electric, damage: 25 },
+      { name: "Fire Blast", type: MechType.Kinetic, damage: 40 },
+      { name: "Water Cannon", type: MechType.Beam, damage: 30 },
+      { name: "Thunder Shock", type: MechType.Emp, damage: 25 },
       { name: "Iron Defense", type: "defense", damage: 0 },
     ],
   };
@@ -29,8 +29,8 @@ describe("BattleManager", () => {
 
   beforeEach(() => {
     bm = new BattleManager();
-    player = makeMech("PlayerMech", MechType.Fire);
-    opponent = makeMech("EnemyMech", MechType.Water);
+    player = makeMech("PlayerMech", MechType.Kinetic);
+    opponent = makeMech("EnemyMech", MechType.Beam);
   });
 
   describe("initBattle", () => {
@@ -56,66 +56,63 @@ describe("BattleManager", () => {
   describe("checkTypeEffectiveness", () => {
     it("Fire > Electric (super effective)", () => {
       assert.equal(
-        bm.checkTypeEffectiveness(MechType.Fire, MechType.Electric),
+        bm.checkTypeEffectiveness(MechType.Kinetic, MechType.Emp),
         1.5,
       );
     });
 
     it("Electric > Water (super effective)", () => {
-      assert.equal(
-        bm.checkTypeEffectiveness(MechType.Electric, MechType.Water),
-        1.5,
-      );
+      assert.equal(bm.checkTypeEffectiveness(MechType.Emp, MechType.Beam), 1.5);
     });
 
     it("Water > Fire (super effective)", () => {
       assert.equal(
-        bm.checkTypeEffectiveness(MechType.Water, MechType.Fire),
+        bm.checkTypeEffectiveness(MechType.Beam, MechType.Kinetic),
         1.5,
       );
     });
 
     it("Fire vs Water (not effective)", () => {
       assert.equal(
-        bm.checkTypeEffectiveness(MechType.Fire, MechType.Water),
+        bm.checkTypeEffectiveness(MechType.Kinetic, MechType.Beam),
         0.5,
       );
     });
 
     it("Water vs Electric (not effective)", () => {
-      assert.equal(
-        bm.checkTypeEffectiveness(MechType.Water, MechType.Electric),
-        0.5,
-      );
+      assert.equal(bm.checkTypeEffectiveness(MechType.Beam, MechType.Emp), 0.5);
     });
 
     it("Electric vs Fire (not effective)", () => {
       assert.equal(
-        bm.checkTypeEffectiveness(MechType.Electric, MechType.Fire),
+        bm.checkTypeEffectiveness(MechType.Emp, MechType.Kinetic),
         0.5,
       );
     });
 
     it("same type returns 1x", () => {
-      assert.equal(bm.checkTypeEffectiveness(MechType.Fire, MechType.Fire), 1);
+      assert.equal(
+        bm.checkTypeEffectiveness(MechType.Kinetic, MechType.Kinetic),
+        1,
+      );
     });
   });
 
   describe("calculateDamage", () => {
     it("should apply super effective multiplier", () => {
       bm.initBattle(player, opponent);
-      const skill = { name: "Water Cannon", type: MechType.Water, damage: 30 };
+      const skill = { name: "Water Cannon", type: MechType.Beam, damage: 30 };
       // Water vs Fire defender → 1.5x → 45
-      const fireMech = makeMech("Fire", MechType.Fire);
+      const fireMech = makeMech("Fire", MechType.Kinetic);
       const dmg = bm.calculateDamage(skill, opponent, fireMech);
       assert.equal(dmg, 45);
     });
 
     it("should apply not-effective multiplier", () => {
       bm.initBattle(player, opponent);
-      const skill = { name: "Fire Blast", type: MechType.Fire, damage: 40 };
+      const skill = { name: "Fire Blast", type: MechType.Kinetic, damage: 40 };
       // Fire vs Water defender → 0.5x → 20
-      const waterMech = makeMech("Water", MechType.Water);
+      const waterMech = makeMech("Water", MechType.Beam);
       const dmg = bm.calculateDamage(skill, player, waterMech);
       assert.equal(dmg, 20);
     });
@@ -154,7 +151,7 @@ describe("BattleManager", () => {
     });
 
     it("should not execute if not PLAYER_TURN phase", () => {
-      const lowHpOpponent = makeMech("Weak", MechType.Electric, 10);
+      const lowHpOpponent = makeMech("Weak", MechType.Emp, 10);
       bm.initBattle(player, lowHpOpponent);
       bm.executePlayerAttack(0); // KO → BattleOver
       const state = bm.executePlayerAttack(0); // Should be ignored
@@ -305,7 +302,7 @@ describe("BattleManager", () => {
     });
 
     it("should log winner on battle end", () => {
-      const weakOpponent = makeMech("Weak", MechType.Electric, 1);
+      const weakOpponent = makeMech("Weak", MechType.Emp, 1);
       bm.initBattle(player, weakOpponent);
       const state = bm.executePlayerAttack(0); // Fire vs Electric = 1.5x * 40 = 60 → KO
       const winLog = state.log.find(
@@ -363,7 +360,7 @@ describe("BattleManager", () => {
 
   describe("state machine flow", () => {
     it("should end battle when opponent KO'd on player turn", () => {
-      const weakOpponent = makeMech("Weak", MechType.Electric, 1);
+      const weakOpponent = makeMech("Weak", MechType.Emp, 1);
       bm.initBattle(player, weakOpponent);
       // Fire vs Electric = 1.5x * 40 = 60 → KO
       const state = bm.executePlayerAttack(0);
@@ -373,7 +370,7 @@ describe("BattleManager", () => {
     });
 
     it("should end battle when player KO'd on AI turn", () => {
-      const weakPlayer = makeMech("Weak", MechType.Fire, 1);
+      const weakPlayer = makeMech("Weak", MechType.Kinetic, 1);
       bm.initBattle(weakPlayer, opponent);
       // Use Iron Defense (index 3, 0 damage) so opponent survives
       bm.executePlayerAttack(3);

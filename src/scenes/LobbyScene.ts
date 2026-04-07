@@ -27,16 +27,16 @@ const COLORS = {
   dimText: "#888888",
   buttonBg: 0x333333,
   buttonHover: 0x444444,
-  fire: "#FF4500",
-  water: "#1E90FF",
-  electric: "#FFD700",
+  kinetic: "#FF4500",
+  beam: "#1E90FF",
+  emp: "#FFD700",
   defense: "#888888",
 } as const;
 
 const TYPE_COLORS: Record<string, string> = {
-  fire: COLORS.fire,
-  water: COLORS.water,
-  electric: COLORS.electric,
+  kinetic: COLORS.kinetic,
+  beam: COLORS.beam,
+  emp: COLORS.emp,
   defense: COLORS.defense,
 };
 

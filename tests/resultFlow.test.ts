@@ -14,9 +14,9 @@ function makeMech(
     hp,
     maxHp: hp,
     skills: [
-      { name: "Fire Blast", type: MechType.Fire, damage: 40 },
-      { name: "Water Cannon", type: MechType.Water, damage: 30 },
-      { name: "Thunder Shock", type: MechType.Electric, damage: 25 },
+      { name: "Fire Blast", type: MechType.Kinetic, damage: 40 },
+      { name: "Water Cannon", type: MechType.Beam, damage: 30 },
+      { name: "Thunder Shock", type: MechType.Emp, damage: 25 },
       { name: "Iron Defense", type: "defense", damage: 0 },
     ],
   };
@@ -29,13 +29,13 @@ describe("battle result flow data", () => {
 
   beforeEach(() => {
     bm = new BattleManager();
-    player = makeMech("PlayerMech", MechType.Fire);
-    opponent = makeMech("EnemyMech", MechType.Water);
+    player = makeMech("PlayerMech", MechType.Kinetic);
+    opponent = makeMech("EnemyMech", MechType.Beam);
   });
 
   describe("victory state", () => {
     it("should set winner to 'player' when opponent HP reaches 0", () => {
-      const weakOpponent = makeMech("Weak", MechType.Electric, 1);
+      const weakOpponent = makeMech("Weak", MechType.Emp, 1);
       bm.initBattle(player, weakOpponent);
       const state = bm.executePlayerAttack(0); // Fire vs Electric → 1.5x → 60 → KO
       assert.equal(state.winner, "player");
@@ -43,14 +43,14 @@ describe("battle result flow data", () => {
     });
 
     it("should clamp opponent HP to 0 on overkill", () => {
-      const weakOpponent = makeMech("Weak", MechType.Electric, 1);
+      const weakOpponent = makeMech("Weak", MechType.Emp, 1);
       bm.initBattle(player, weakOpponent);
       const state = bm.executePlayerAttack(0);
       assert.equal(state.opponent.hp, 0);
     });
 
     it("should preserve player HP in victory state for summary", () => {
-      const weakOpponent = makeMech("Weak", MechType.Electric, 1);
+      const weakOpponent = makeMech("Weak", MechType.Emp, 1);
       bm.initBattle(player, weakOpponent);
       const state = bm.executePlayerAttack(0);
       assert.equal(state.player.hp, state.player.maxHp);
@@ -58,14 +58,14 @@ describe("battle result flow data", () => {
     });
 
     it("should track turn count for victory summary", () => {
-      const weakOpponent = makeMech("Weak", MechType.Electric, 1);
+      const weakOpponent = makeMech("Weak", MechType.Emp, 1);
       bm.initBattle(player, weakOpponent);
       const state = bm.executePlayerAttack(0);
       assert.equal(state.turnCount, 1);
     });
 
     it("should log victory message", () => {
-      const weakOpponent = makeMech("Weak", MechType.Electric, 1);
+      const weakOpponent = makeMech("Weak", MechType.Emp, 1);
       bm.initBattle(player, weakOpponent);
       const state = bm.executePlayerAttack(0);
       const winLog = state.log.find(
@@ -77,7 +77,7 @@ describe("battle result flow data", () => {
 
   describe("defeat state", () => {
     it("should set winner to 'opponent' when player HP reaches 0", () => {
-      const weakPlayer = makeMech("Weak", MechType.Fire, 1);
+      const weakPlayer = makeMech("Weak", MechType.Kinetic, 1);
       bm.initBattle(weakPlayer, opponent);
       bm.executePlayerAttack(3); // defense — no damage, move to AI
       const state = bm.executeAiAttack(1); // Water Cannon vs Fire → 1.5x → 45 → KO
@@ -86,7 +86,7 @@ describe("battle result flow data", () => {
     });
 
     it("should clamp player HP to 0 on overkill", () => {
-      const weakPlayer = makeMech("Weak", MechType.Fire, 1);
+      const weakPlayer = makeMech("Weak", MechType.Kinetic, 1);
       bm.initBattle(weakPlayer, opponent);
       bm.executePlayerAttack(3);
       const state = bm.executeAiAttack(1);
@@ -94,7 +94,7 @@ describe("battle result flow data", () => {
     });
 
     it("should log defeat message", () => {
-      const weakPlayer = makeMech("Weak", MechType.Fire, 1);
+      const weakPlayer = makeMech("Weak", MechType.Kinetic, 1);
       bm.initBattle(weakPlayer, opponent);
       bm.executePlayerAttack(3);
       const state = bm.executeAiAttack(1);
@@ -142,13 +142,13 @@ describe("battle result flow data", () => {
     });
 
     it("should distinguish win from loss via winner field", () => {
-      const weakOpponent = makeMech("Weak", MechType.Electric, 1);
+      const weakOpponent = makeMech("Weak", MechType.Emp, 1);
       bm.initBattle(player, weakOpponent);
       const winState = bm.executePlayerAttack(0);
       assert.equal(winState.winner, "player");
 
       const bm2 = new BattleManager();
-      const weakPlayer = makeMech("Weak", MechType.Fire, 1);
+      const weakPlayer = makeMech("Weak", MechType.Kinetic, 1);
       bm2.initBattle(weakPlayer, opponent);
       bm2.executePlayerAttack(3);
       const loseState = bm2.executeAiAttack(1);
@@ -158,7 +158,7 @@ describe("battle result flow data", () => {
 
   describe("battle cannot continue after result", () => {
     it("should not allow player attack after victory", () => {
-      const weakOpponent = makeMech("Weak", MechType.Electric, 1);
+      const weakOpponent = makeMech("Weak", MechType.Emp, 1);
       bm.initBattle(player, weakOpponent);
       bm.executePlayerAttack(0); // KO
       const state = bm.executePlayerAttack(0); // should be ignored
@@ -166,7 +166,7 @@ describe("battle result flow data", () => {
     });
 
     it("should not allow AI attack after defeat", () => {
-      const weakPlayer = makeMech("Weak", MechType.Fire, 1);
+      const weakPlayer = makeMech("Weak", MechType.Kinetic, 1);
       bm.initBattle(weakPlayer, opponent);
       bm.executePlayerAttack(3);
       bm.executeAiAttack(1); // KO

@@ -6,9 +6,9 @@ import {
 } from "../src/utils/attackEffects";
 
 const MechType = {
-  Fire: "fire",
-  Water: "water",
-  Electric: "electric",
+  Kinetic: "kinetic",
+  Beam: "beam",
+  Emp: "emp",
 } as const;
 
 /**
@@ -92,7 +92,7 @@ describe("playAttackProjectile", () => {
       scene as never,
       attacker as never,
       target as never,
-      MechType.Fire,
+      MechType.Kinetic,
     );
 
     // Should have created at least one graphics object (the projectile)
@@ -135,7 +135,7 @@ describe("playAttackProjectile", () => {
       scene as never,
       attacker as never,
       target as never,
-      MechType.Water,
+      MechType.Beam,
     );
 
     const projectile = scene._createdGraphics[0];
@@ -157,7 +157,7 @@ describe("playAttackProjectile", () => {
       scene as never,
       attacker as never,
       target as never,
-      MechType.Electric,
+      MechType.Emp,
     );
 
     const projectile = scene._createdGraphics[0];
@@ -174,7 +174,7 @@ describe("playHitReaction", () => {
     const scene = createMockScene();
     const target = createMockMechSprite(300, 150);
 
-    await playHitReaction(scene as never, target as never, MechType.Fire);
+    await playHitReaction(scene as never, target as never, MechType.Kinetic);
 
     // Should create explosion + spark graphics
     // 1 explosion + 6 sparks = at least 7
@@ -194,7 +194,7 @@ describe("playHitReaction", () => {
     const scene = createMockScene();
     const target = createMockMechSprite(250, 200);
 
-    await playHitReaction(scene as never, target as never, MechType.Electric);
+    await playHitReaction(scene as never, target as never, MechType.Emp);
 
     const explosion = scene._createdGraphics[0];
     const posCall = explosion._calls.find((c) => c.method === "setPosition");
@@ -206,7 +206,7 @@ describe("playHitReaction", () => {
     const scene = createMockScene();
     const target = createMockMechSprite(300, 150);
 
-    await playHitReaction(scene as never, target as never, MechType.Water);
+    await playHitReaction(scene as never, target as never, MechType.Beam);
 
     // After the shake tween completes (auto-completed by mock),
     // container.x should be restored to original value
@@ -217,7 +217,7 @@ describe("playHitReaction", () => {
     const scene = createMockScene();
     const target = createMockMechSprite(300, 150);
 
-    await playHitReaction(scene as never, target as never, MechType.Fire);
+    await playHitReaction(scene as never, target as never, MechType.Kinetic);
 
     const explosion = scene._createdGraphics[0];
     // Find the explosion expand tween (targets the explosion graphics, duration 350)

@@ -46,9 +46,9 @@ describe("soundManager", () => {
 
     it("playAttackSound should not throw for each type", () => {
       setMuted(true);
-      assert.doesNotThrow(() => playAttackSound("fire"));
-      assert.doesNotThrow(() => playAttackSound("water"));
-      assert.doesNotThrow(() => playAttackSound("electric"));
+      assert.doesNotThrow(() => playAttackSound("kinetic"));
+      assert.doesNotThrow(() => playAttackSound("beam"));
+      assert.doesNotThrow(() => playAttackSound("emp"));
       assert.doesNotThrow(() => playAttackSound("defense"));
     });
 
@@ -73,7 +73,7 @@ describe("soundManager", () => {
     });
 
     it("playAttackSound should not throw without AudioContext", () => {
-      assert.doesNotThrow(() => playAttackSound("fire"));
+      assert.doesNotThrow(() => playAttackSound("kinetic"));
     });
 
     it("playHitSound should not throw without AudioContext", () => {

@@ -1,9 +1,9 @@
 /** Core game state types for Mech Arena AI */
 
 export const MechType = {
-  Fire: "fire",
-  Water: "water",
-  Electric: "electric",
+  Kinetic: "kinetic",
+  Beam: "beam",
+  Emp: "emp",
 } as const;
 
 export type MechType = (typeof MechType)[keyof typeof MechType];

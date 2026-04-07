@@ -9,8 +9,8 @@ function makeRecord(overrides?: Partial<BattleRecord>): BattleRecord {
   return {
     id: "test-123",
     timestamp: Date.now(),
-    playerMechType: "fire" as BattleRecord["playerMechType"],
-    opponentMechType: "water" as BattleRecord["opponentMechType"],
+    playerMechType: "kinetic" as BattleRecord["playerMechType"],
+    opponentMechType: "beam" as BattleRecord["opponentMechType"],
     result: "win",
     turns: 5,
     playerHpLeft: 60,

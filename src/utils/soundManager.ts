@@ -85,9 +85,9 @@ export function playClickSound(): void {
 
 /** Attack sound with frequency based on skill type. */
 export function playAttackSound(
-  type: "fire" | "water" | "electric" | "defense",
+  type: "kinetic" | "beam" | "emp" | "defense",
 ): void {
-  const freqMap = { fire: 300, water: 500, electric: 700, defense: 200 };
+  const freqMap = { kinetic: 300, beam: 500, emp: 700, defense: 200 };
   const freq = freqMap[type] ?? 400;
   playTone(freq, 0.12, "sawtooth", 0.12);
   playTone(freq * 1.5, 0.08, "square", 0.06);

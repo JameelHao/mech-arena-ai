@@ -8,25 +8,25 @@ function makeGameState(overrides?: Partial<BattleState>): BattleState {
   return {
     player: {
       name: "PlayerMech",
-      type: MechType.Fire,
+      type: MechType.Kinetic,
       hp: 80,
       maxHp: 100,
       skills: [
-        { name: "Fire Blast", type: MechType.Fire, damage: 40 },
-        { name: "Water Cannon", type: MechType.Water, damage: 30 },
-        { name: "Thunder Shock", type: MechType.Electric, damage: 25 },
+        { name: "Fire Blast", type: MechType.Kinetic, damage: 40 },
+        { name: "Water Cannon", type: MechType.Beam, damage: 30 },
+        { name: "Thunder Shock", type: MechType.Emp, damage: 25 },
         { name: "Iron Defense", type: "defense", damage: 0 },
       ],
     },
     opponent: {
       name: "EnemyMech",
-      type: MechType.Water,
+      type: MechType.Beam,
       hp: 60,
       maxHp: 100,
       skills: [
-        { name: "Water Cannon", type: MechType.Water, damage: 30 },
-        { name: "Fire Blast", type: MechType.Fire, damage: 40 },
-        { name: "Thunder Shock", type: MechType.Electric, damage: 25 },
+        { name: "Water Cannon", type: MechType.Beam, damage: 30 },
+        { name: "Fire Blast", type: MechType.Kinetic, damage: 40 },
+        { name: "Thunder Shock", type: MechType.Emp, damage: 25 },
         { name: "Iron Defense", type: "defense", damage: 0 },
       ],
     },

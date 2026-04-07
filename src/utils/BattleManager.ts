@@ -8,14 +8,14 @@ import {
   TurnPhase,
 } from "../types/game";
 
-// Type effectiveness: Fire > Electric > Water > Fire (1.5x super, 0.5x weak)
+// Type effectiveness: Kinetic > EMP > Beam > Kinetic (1.5x super, 0.5x weak)
 export const EFFECTIVENESS: Record<
   MechType,
   { strong: MechType; weak: MechType }
 > = {
-  [MechType.Fire]: { strong: MechType.Electric, weak: MechType.Water },
-  [MechType.Water]: { strong: MechType.Fire, weak: MechType.Electric },
-  [MechType.Electric]: { strong: MechType.Water, weak: MechType.Fire },
+  [MechType.Kinetic]: { strong: MechType.Emp, weak: MechType.Beam },
+  [MechType.Beam]: { strong: MechType.Kinetic, weak: MechType.Emp },
+  [MechType.Emp]: { strong: MechType.Beam, weak: MechType.Kinetic },
 };
 
 export const SUPER_EFFECTIVE_MULTIPLIER = 1.5;
@@ -183,7 +183,7 @@ export class BattleManager {
   private createEmptyState(): BattleState {
     const emptyMech: Mech = {
       name: "",
-      type: MechType.Fire,
+      type: MechType.Kinetic,
       hp: 0,
       maxHp: 0,
       skills: [],

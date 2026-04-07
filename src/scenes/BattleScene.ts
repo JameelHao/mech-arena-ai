@@ -76,16 +76,16 @@ const COLORS = {
   panelBorder: 0x444444,
   buttonBg: 0x333333,
   buttonHover: 0x444444,
-  fire: "#FF4500",
-  water: "#1E90FF",
-  electric: "#FFD700",
+  kinetic: "#FF4500",
+  beam: "#1E90FF",
+  emp: "#FFD700",
   defense: "#888888",
 } as const;
 
 const SKILL_COLORS: Record<string, string> = {
-  fire: COLORS.fire,
-  water: COLORS.water,
-  electric: COLORS.electric,
+  kinetic: COLORS.kinetic,
+  beam: COLORS.beam,
+  emp: COLORS.emp,
   defense: COLORS.defense,
 };
 
@@ -1170,9 +1170,7 @@ export class BattleScene extends Phaser.Scene {
       SKILL_COLORS[playerSkill.type] ?? COLORS.accent,
     );
     await this.playAttackAnimation(true);
-    playAttackSound(
-      playerSkill.type as "fire" | "water" | "electric" | "defense",
-    );
+    playAttackSound(playerSkill.type as "kinetic" | "beam" | "emp" | "defense");
     await playAttackProjectile(
       this,
       this.playerMechSprite,
@@ -1270,7 +1268,7 @@ export class BattleScene extends Phaser.Scene {
       SKILL_COLORS[aiSkill.type] ?? COLORS.accent,
     );
     await this.playAttackAnimation(false);
-    playAttackSound(aiSkill.type as "fire" | "water" | "electric" | "defense");
+    playAttackSound(aiSkill.type as "kinetic" | "beam" | "emp" | "defense");
     await playAttackProjectile(
       this,
       this.opponentMechSprite,
