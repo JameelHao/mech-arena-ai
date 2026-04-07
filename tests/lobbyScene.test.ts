@@ -5,11 +5,11 @@ import { MechType } from "../src/types/game";
 
 describe("shared mech definitions", () => {
   it("PLAYER_MECH should be Fire type", () => {
-    assert.equal(PLAYER_MECH.type, MechType.Fire);
+    assert.equal(PLAYER_MECH.type, MechType.Kinetic);
   });
 
   it("OPPONENT_MECH should be Water type", () => {
-    assert.equal(OPPONENT_MECH.type, MechType.Water);
+    assert.equal(OPPONENT_MECH.type, MechType.Beam);
   });
 
   it("both mechs should have 100 HP", () => {
@@ -93,7 +93,10 @@ describe("lobby skill preview logic", () => {
   }
 
   it("should format attack skill info", () => {
-    assert.equal(formatSkillInfo(PLAYER_MECH.skills[0]), "FIRE \u00B7 40 DMG");
+    assert.equal(
+      formatSkillInfo(PLAYER_MECH.skills[0]),
+      "KINETIC \u00B7 40 DMG",
+    );
   });
 
   it("should format defense skill info", () => {
@@ -104,6 +107,6 @@ describe("lobby skill preview logic", () => {
   });
 
   it("should format water skill info", () => {
-    assert.equal(formatSkillInfo(PLAYER_MECH.skills[1]), "WATER \u00B7 30 DMG");
+    assert.equal(formatSkillInfo(PLAYER_MECH.skills[1]), "BEAM \u00B7 30 DMG");
   });
 });

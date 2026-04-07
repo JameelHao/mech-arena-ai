@@ -20,9 +20,9 @@ describe("MECH_ROSTER", () => {
 
   it("should contain all three types", () => {
     const types = new Set(MECH_ROSTER.map((m) => m.type));
-    assert.ok(types.has(MechType.Fire));
-    assert.ok(types.has(MechType.Water));
-    assert.ok(types.has(MechType.Electric));
+    assert.ok(types.has(MechType.Kinetic));
+    assert.ok(types.has(MechType.Beam));
+    assert.ok(types.has(MechType.Emp));
   });
 
   it("each mech should have 4 skills", () => {
@@ -57,7 +57,7 @@ describe("PLAYER_MECH default", () => {
 
 describe("OPPONENT_MECH", () => {
   it("should have Water type", () => {
-    assert.equal(OPPONENT_MECH.type, MechType.Water);
+    assert.equal(OPPONENT_MECH.type, MechType.Beam);
   });
 
   it("should have VENOM BATTALION codename", () => {

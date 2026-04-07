@@ -10,24 +10,24 @@ import {
 
 describe("type effectiveness constants", () => {
   it("should have entries for all three types", () => {
-    assert.ok(EFFECTIVENESS[MechType.Fire]);
-    assert.ok(EFFECTIVENESS[MechType.Water]);
-    assert.ok(EFFECTIVENESS[MechType.Electric]);
+    assert.ok(EFFECTIVENESS[MechType.Kinetic]);
+    assert.ok(EFFECTIVENESS[MechType.Beam]);
+    assert.ok(EFFECTIVENESS[MechType.Emp]);
   });
 
   it("Fire should be strong against Electric and weak to Water", () => {
-    assert.equal(EFFECTIVENESS[MechType.Fire].strong, MechType.Electric);
-    assert.equal(EFFECTIVENESS[MechType.Fire].weak, MechType.Water);
+    assert.equal(EFFECTIVENESS[MechType.Kinetic].strong, MechType.Emp);
+    assert.equal(EFFECTIVENESS[MechType.Kinetic].weak, MechType.Beam);
   });
 
   it("Water should be strong against Fire and weak to Electric", () => {
-    assert.equal(EFFECTIVENESS[MechType.Water].strong, MechType.Fire);
-    assert.equal(EFFECTIVENESS[MechType.Water].weak, MechType.Electric);
+    assert.equal(EFFECTIVENESS[MechType.Beam].strong, MechType.Kinetic);
+    assert.equal(EFFECTIVENESS[MechType.Beam].weak, MechType.Emp);
   });
 
   it("Electric should be strong against Water and weak to Fire", () => {
-    assert.equal(EFFECTIVENESS[MechType.Electric].strong, MechType.Water);
-    assert.equal(EFFECTIVENESS[MechType.Electric].weak, MechType.Fire);
+    assert.equal(EFFECTIVENESS[MechType.Emp].strong, MechType.Beam);
+    assert.equal(EFFECTIVENESS[MechType.Emp].weak, MechType.Kinetic);
   });
 
   it("super effective multiplier should be 1.5", () => {
@@ -41,21 +41,21 @@ describe("type effectiveness constants", () => {
 
 describe("getEffectiveness", () => {
   it("should return 1.5 for super effective matchups", () => {
-    assert.equal(getEffectiveness(MechType.Fire, MechType.Electric), 1.5);
-    assert.equal(getEffectiveness(MechType.Water, MechType.Fire), 1.5);
-    assert.equal(getEffectiveness(MechType.Electric, MechType.Water), 1.5);
+    assert.equal(getEffectiveness(MechType.Kinetic, MechType.Emp), 1.5);
+    assert.equal(getEffectiveness(MechType.Beam, MechType.Kinetic), 1.5);
+    assert.equal(getEffectiveness(MechType.Emp, MechType.Beam), 1.5);
   });
 
   it("should return 0.5 for not effective matchups", () => {
-    assert.equal(getEffectiveness(MechType.Fire, MechType.Water), 0.5);
-    assert.equal(getEffectiveness(MechType.Water, MechType.Electric), 0.5);
-    assert.equal(getEffectiveness(MechType.Electric, MechType.Fire), 0.5);
+    assert.equal(getEffectiveness(MechType.Kinetic, MechType.Beam), 0.5);
+    assert.equal(getEffectiveness(MechType.Beam, MechType.Emp), 0.5);
+    assert.equal(getEffectiveness(MechType.Emp, MechType.Kinetic), 0.5);
   });
 
   it("should return 1 for neutral matchups", () => {
-    assert.equal(getEffectiveness(MechType.Fire, MechType.Fire), 1);
-    assert.equal(getEffectiveness(MechType.Water, MechType.Water), 1);
-    assert.equal(getEffectiveness(MechType.Electric, MechType.Electric), 1);
+    assert.equal(getEffectiveness(MechType.Kinetic, MechType.Kinetic), 1);
+    assert.equal(getEffectiveness(MechType.Beam, MechType.Beam), 1);
+    assert.equal(getEffectiveness(MechType.Emp, MechType.Emp), 1);
   });
 });
 
@@ -91,19 +91,19 @@ describe("skill button effectiveness hint logic", () => {
   }
 
   it("should show ▲ 1.5x for super effective skill", () => {
-    const result = getHintLabel("fire", 40, MechType.Electric);
+    const result = getHintLabel("kinetic", 40, MechType.Emp);
     assert.ok(result.label.includes("\u25B2 1.5x"));
     assert.equal(result.isSuper, true);
   });
 
   it("should show ▼ 0.5x for not effective skill", () => {
-    const result = getHintLabel("fire", 40, MechType.Water);
+    const result = getHintLabel("kinetic", 40, MechType.Beam);
     assert.ok(result.label.includes("\u25BC 0.5x"));
     assert.equal(result.isResist, true);
   });
 
   it("should show no hint for neutral skill", () => {
-    const result = getHintLabel("fire", 40, MechType.Fire);
+    const result = getHintLabel("kinetic", 40, MechType.Kinetic);
     assert.ok(!result.label.includes("\u25B2"));
     assert.ok(!result.label.includes("\u25BC"));
     assert.equal(result.isSuper, false);
@@ -111,7 +111,7 @@ describe("skill button effectiveness hint logic", () => {
   });
 
   it("should show BUFF label for defense skill", () => {
-    const result = getHintLabel("defense", 0, MechType.Water);
+    const result = getHintLabel("defense", 0, MechType.Beam);
     assert.equal(result.label, "BUFF \u00B7 DEF +50%");
   });
 });

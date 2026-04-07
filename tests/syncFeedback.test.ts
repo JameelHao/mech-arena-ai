@@ -14,9 +14,9 @@ function makeMech(
     hp,
     maxHp: hp,
     skills: [
-      { name: "Fire Blast", type: MechType.Fire, damage: 40 },
-      { name: "Water Cannon", type: MechType.Water, damage: 30 },
-      { name: "Thunder Shock", type: MechType.Electric, damage: 25 },
+      { name: "Fire Blast", type: MechType.Kinetic, damage: 40 },
+      { name: "Water Cannon", type: MechType.Beam, damage: 30 },
+      { name: "Thunder Shock", type: MechType.Emp, damage: 25 },
       { name: "Iron Defense", type: "defense", damage: 0 },
     ],
   };
@@ -29,8 +29,8 @@ describe("attack feedback synchronization", () => {
 
   beforeEach(() => {
     bm = new BattleManager();
-    player = makeMech("PlayerMech", MechType.Fire);
-    opponent = makeMech("EnemyMech", MechType.Water);
+    player = makeMech("PlayerMech", MechType.Kinetic);
+    opponent = makeMech("EnemyMech", MechType.Beam);
   });
 
   describe("damage attacks produce hit feedback data", () => {
@@ -87,7 +87,7 @@ describe("attack feedback synchronization", () => {
   describe("effectiveness feedback data", () => {
     it("should log [SUP] for super effective attack", () => {
       // Fire vs Electric = super effective
-      const electricOpp = makeMech("ElecMech", MechType.Electric);
+      const electricOpp = makeMech("ElecMech", MechType.Emp);
       bm.initBattle(player, electricOpp);
       const state = bm.executePlayerAttack(0); // Fire Blast vs Electric
       assert.ok(
@@ -108,7 +108,7 @@ describe("attack feedback synchronization", () => {
 
     it("should not log [SUP] or [RES] for neutral attack", () => {
       // Fire vs Fire = neutral
-      const fireOpp = makeMech("FireMech", MechType.Fire);
+      const fireOpp = makeMech("FireMech", MechType.Kinetic);
       bm.initBattle(player, fireOpp);
       const state = bm.executePlayerAttack(0);
       assert.ok(
@@ -155,8 +155,8 @@ describe("defense label display logic", () => {
 
   it("defense label should appear when damage is 0", () => {
     const bm = new BattleManager();
-    const player = makeMech("P", MechType.Fire);
-    const opponent = makeMech("O", MechType.Water);
+    const player = makeMech("P", MechType.Kinetic);
+    const opponent = makeMech("O", MechType.Beam);
     bm.initBattle(player, opponent);
     const prevHp = bm.getState().opponent.hp;
     const after = bm.executePlayerAttack(3); // defense

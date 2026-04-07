@@ -43,8 +43,8 @@ function makeRecord(
   return {
     id,
     timestamp: timestamp ?? Date.now(),
-    playerMechType: "fire" as const,
-    opponentMechType: "water" as const,
+    playerMechType: "kinetic" as const,
+    opponentMechType: "beam" as const,
     result,
     turns: 5,
     playerHpLeft: 50,

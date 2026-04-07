@@ -334,9 +334,9 @@ const EFFECT_FN: Record<
     h: number,
   ) => Phaser.Time.TimerEvent
 > = {
-  [MechType.Fire]: createFireEffects,
-  [MechType.Water]: createWaterEffects,
-  [MechType.Electric]: createElectricEffects,
+  [MechType.Kinetic]: createFireEffects,
+  [MechType.Beam]: createWaterEffects,
+  [MechType.Emp]: createElectricEffects,
 };
 
 // ─── Public API ───────────────────────────────────────────���───────────────────

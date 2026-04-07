@@ -33,22 +33,22 @@ export interface AssetEntry {
 
 export const ASSET_REGISTRY = {
   mechs: {
-    [MechType.Fire]: { key: "mech-fire", path: fireMechPng } as AssetEntry,
-    [MechType.Water]: { key: "mech-water", path: waterMechPng } as AssetEntry,
-    [MechType.Electric]: null, // programmatic fallback until asset is ready
+    [MechType.Kinetic]: { key: "mech-fire", path: fireMechPng } as AssetEntry,
+    [MechType.Beam]: { key: "mech-water", path: waterMechPng } as AssetEntry,
+    [MechType.Emp]: null, // programmatic fallback until asset is ready
   },
   portraits: {
-    [MechType.Fire]: {
+    [MechType.Kinetic]: {
       normal: { key: "portrait-player-normal", path: playerNormalPng },
       angry: { key: "portrait-player-angry", path: playerAngryPng },
       defeated: { key: "portrait-player-defeated", path: playerDefeatedPng },
     } as Record<PortraitState, AssetEntry>,
-    [MechType.Water]: {
+    [MechType.Beam]: {
       normal: { key: "portrait-water-normal", path: waterNormalPng },
       angry: { key: "portrait-water-angry", path: waterAngryPng },
       defeated: { key: "portrait-water-defeated", path: waterDefeatedPng },
     } as Record<PortraitState, AssetEntry>,
-    [MechType.Electric]: null, // no portrait asset yet
+    [MechType.Emp]: null, // no portrait asset yet
   },
   backgrounds: {
     city: { key: "bg-city", path: battleBgCityPng } as AssetEntry,

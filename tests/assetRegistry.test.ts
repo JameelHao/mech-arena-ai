@@ -6,8 +6,8 @@ import { MechType } from "../src/types/game";
 describe("ASSET_REGISTRY", () => {
   describe("mechs", () => {
     it("should have entries for fire and water types", () => {
-      const fire = ASSET_REGISTRY.mechs[MechType.Fire];
-      const water = ASSET_REGISTRY.mechs[MechType.Water];
+      const fire = ASSET_REGISTRY.mechs[MechType.Kinetic];
+      const water = ASSET_REGISTRY.mechs[MechType.Beam];
       assert.ok(fire, "fire entry should exist");
       assert.ok(water, "water entry should exist");
       assert.equal(fire?.key, "mech-fire");
@@ -15,7 +15,7 @@ describe("ASSET_REGISTRY", () => {
     });
 
     it("should have null for electric type (no PNG yet)", () => {
-      assert.equal(ASSET_REGISTRY.mechs[MechType.Electric], null);
+      assert.equal(ASSET_REGISTRY.mechs[MechType.Emp], null);
     });
 
     it("each non-null entry should have key and path", () => {
@@ -38,15 +38,15 @@ describe("ASSET_REGISTRY", () => {
 
     it("should index portraits by MechType, not player/enemy", () => {
       assert.ok(
-        ASSET_REGISTRY.portraits[MechType.Fire],
+        ASSET_REGISTRY.portraits[MechType.Kinetic],
         "fire portraits should exist",
       );
       assert.ok(
-        ASSET_REGISTRY.portraits[MechType.Water],
+        ASSET_REGISTRY.portraits[MechType.Beam],
         "water portraits should exist",
       );
       assert.equal(
-        ASSET_REGISTRY.portraits[MechType.Electric],
+        ASSET_REGISTRY.portraits[MechType.Emp],
         null,
         "electric portraits should be null",
       );
@@ -65,7 +65,7 @@ describe("ASSET_REGISTRY", () => {
 
     for (const state of STATES) {
       it(`should have player-${state} portrait entry for Fire type`, () => {
-        const entry = ASSET_REGISTRY.portraits[MechType.Fire]?.[state];
+        const entry = ASSET_REGISTRY.portraits[MechType.Kinetic]?.[state];
         assert.ok(entry, `player-${state} should exist`);
         assert.equal(entry.key, `portrait-player-${state}`);
         assert.ok(typeof entry.path === "string" && entry.path.length > 0);
@@ -74,7 +74,7 @@ describe("ASSET_REGISTRY", () => {
 
     for (const state of STATES) {
       it(`should have water-${state} portrait entry`, () => {
-        const entry = ASSET_REGISTRY.portraits[MechType.Water]?.[state];
+        const entry = ASSET_REGISTRY.portraits[MechType.Beam]?.[state];
         assert.ok(entry, `water-${state} should exist`);
         assert.equal(entry.key, `portrait-water-${state}`);
         assert.ok(typeof entry.path === "string" && entry.path.length > 0);
@@ -82,11 +82,11 @@ describe("ASSET_REGISTRY", () => {
     }
 
     it("should have null for electric type (no portrait yet)", () => {
-      assert.equal(ASSET_REGISTRY.portraits[MechType.Electric], null);
+      assert.equal(ASSET_REGISTRY.portraits[MechType.Emp], null);
     });
 
     it("player portrait paths should reference player-prefixed files", () => {
-      const states = ASSET_REGISTRY.portraits[MechType.Fire];
+      const states = ASSET_REGISTRY.portraits[MechType.Kinetic];
       assert.ok(states);
       for (const [state, entry] of Object.entries(states)) {
         assert.ok(
@@ -97,7 +97,7 @@ describe("ASSET_REGISTRY", () => {
     });
 
     it("water portrait paths should reference water-prefixed files", () => {
-      const states = ASSET_REGISTRY.portraits[MechType.Water];
+      const states = ASSET_REGISTRY.portraits[MechType.Beam];
       assert.ok(states);
       for (const [state, entry] of Object.entries(states)) {
         assert.ok(
@@ -127,8 +127,8 @@ describe("ASSET_REGISTRY", () => {
 
     for (const state of STATES) {
       it(`player-${state} and water-${state} should have different texture keys`, () => {
-        const player = ASSET_REGISTRY.portraits[MechType.Fire]?.[state];
-        const water = ASSET_REGISTRY.portraits[MechType.Water]?.[state];
+        const player = ASSET_REGISTRY.portraits[MechType.Kinetic]?.[state];
+        const water = ASSET_REGISTRY.portraits[MechType.Beam]?.[state];
         assert.ok(player, `player-${state} should exist`);
         assert.ok(water, `water-${state} should exist`);
         assert.notEqual(
@@ -139,8 +139,8 @@ describe("ASSET_REGISTRY", () => {
       });
 
       it(`player-${state} and water-${state} should have different paths`, () => {
-        const player = ASSET_REGISTRY.portraits[MechType.Fire]?.[state];
-        const water = ASSET_REGISTRY.portraits[MechType.Water]?.[state];
+        const player = ASSET_REGISTRY.portraits[MechType.Kinetic]?.[state];
+        const water = ASSET_REGISTRY.portraits[MechType.Beam]?.[state];
         assert.ok(player && water);
         assert.notEqual(
           player.path,
