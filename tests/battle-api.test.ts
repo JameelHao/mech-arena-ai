@@ -8,6 +8,13 @@ import {
   rateLimitMap,
 } from "../api/battle.ts";
 
+const TEST_SKILLS = [
+  { name: "Railgun Salvo", type: "kinetic", damage: 40 },
+  { name: "Plasma Beam", type: "beam", damage: 30 },
+  { name: "EMP Pulse", type: "emp", damage: 25 },
+  { name: "Reactive Armor", type: "defense", damage: 0 },
+];
+
 describe("buildPrompt", () => {
   it("should contain game state and player strategy", () => {
     const prompt = buildPrompt({
@@ -15,16 +22,47 @@ describe("buildPrompt", () => {
       gameState: {
         playerHP: 80,
         opponentHP: 60,
-        lastMove: "Shield Bash",
+        lastMove: "Railgun Salvo",
         statusEffects: ["defense_up"],
+        skills: TEST_SKILLS,
       },
     });
 
     assert.ok(prompt.includes("Be aggressive"));
     assert.ok(prompt.includes("80"));
     assert.ok(prompt.includes("60"));
-    assert.ok(prompt.includes("Shield Bash"));
+    assert.ok(prompt.includes("Railgun Salvo"));
     assert.ok(prompt.includes("defense_up"));
+  });
+
+  it("should include actual skill names from skills array", () => {
+    const prompt = buildPrompt({
+      mechPrompt: "test",
+      gameState: {
+        playerHP: 100,
+        opponentHP: 100,
+        lastMove: "",
+        statusEffects: [],
+        skills: TEST_SKILLS,
+      },
+    });
+
+    assert.ok(prompt.includes("Railgun Salvo"), "should contain Railgun Salvo");
+    assert.ok(prompt.includes("Plasma Beam"), "should contain Plasma Beam");
+    assert.ok(prompt.includes("EMP Pulse"), "should contain EMP Pulse");
+    assert.ok(
+      prompt.includes("Reactive Armor"),
+      "should contain Reactive Armor",
+    );
+    assert.ok(prompt.includes("kinetic"), "should contain kinetic type");
+    assert.ok(prompt.includes("40 dmg"), "should contain damage value");
+    // Should NOT contain old hardcoded names
+    assert.ok(!prompt.includes("Laser Beam"), "should not contain Laser Beam");
+    assert.ok(
+      !prompt.includes("Shield Bash"),
+      "should not contain Shield Bash",
+    );
+    assert.ok(!prompt.includes("Repair"), "should not contain Repair");
   });
 
   it("should handle empty status effects", () => {
@@ -35,11 +73,26 @@ describe("buildPrompt", () => {
         opponentHP: 100,
         lastMove: "",
         statusEffects: [],
+        skills: TEST_SKILLS,
       },
     });
 
     assert.ok(prompt.includes("Play safe"));
     assert.ok(prompt.includes("none"));
+  });
+
+  it("should fallback when skills not provided", () => {
+    const prompt = buildPrompt({
+      mechPrompt: "test",
+      gameState: {
+        playerHP: 100,
+        opponentHP: 100,
+        lastMove: "",
+        statusEffects: [],
+      },
+    });
+
+    assert.ok(prompt.includes("Skills not available"));
   });
 });
 
