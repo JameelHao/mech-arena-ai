@@ -12,12 +12,12 @@ export { type PortraitState, getPortraitState } from "./portraitState";
 // Re-export registry references so existing consumers keep working
 export const PORTRAIT_TEXTURE_KEYS = ASSET_REGISTRY.portraits;
 
-// Colors only needed for Electric programmatic fallback
-const ELECTRIC_COLORS = {
-  primary: 0xffd700,
-  secondary: 0xffed4a,
-  glow: 0xccaa00,
-  highlight: 0xfff5aa,
+// Colors only needed for EMP programmatic fallback
+const EMP_COLORS = {
+  primary: 0x00bfff,
+  secondary: 0x66dfff,
+  glow: 0x0090cc,
+  highlight: 0x99eeff,
 };
 
 // ─── Electric Mech Programmatic Fallback ─────────────────────────────────────
@@ -55,7 +55,7 @@ function drawHighlights(
   w: number,
   h: number,
 ): void {
-  g.lineStyle(1.5, ELECTRIC_COLORS.highlight, 0.6);
+  g.lineStyle(1.5, EMP_COLORS.highlight, 0.6);
   g.beginPath();
   g.moveTo(-w * 0.05, -h * 0.48);
   g.lineTo(w * 0.05, -h * 0.48);
@@ -74,10 +74,10 @@ function drawThrusters(
   g.fillStyle(0x333333, 0.9);
   g.fillRoundedRect(-w * 0.18, h * 0.36, w * 0.08, h * 0.08, 2);
   g.fillRoundedRect(w * 0.1, h * 0.36, w * 0.08, h * 0.08, 2);
-  g.fillStyle(ELECTRIC_COLORS.glow, 0.7);
+  g.fillStyle(EMP_COLORS.glow, 0.7);
   g.fillRoundedRect(-w * 0.16, h * 0.38, w * 0.04, h * 0.04, 1);
   g.fillRoundedRect(w * 0.12, h * 0.38, w * 0.04, h * 0.04, 1);
-  g.fillStyle(ELECTRIC_COLORS.highlight, 0.4);
+  g.fillStyle(EMP_COLORS.highlight, 0.4);
   g.beginPath();
   g.moveTo(-w * 0.16, h * 0.42);
   g.lineTo(-w * 0.14, h * 0.48);
@@ -114,7 +114,7 @@ function drawElectricMech(
   w: number,
   h: number,
 ): void {
-  const c = ELECTRIC_COLORS;
+  const c = EMP_COLORS;
 
   // Body - jagged polygon
   g.fillStyle(c.primary, 1);

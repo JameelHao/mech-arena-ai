@@ -27,9 +27,9 @@ const COLORS = {
   dimText: "#888888",
   buttonBg: 0x333333,
   buttonHover: 0x444444,
-  kinetic: "#FF4500",
-  beam: "#1E90FF",
-  emp: "#FFD700",
+  kinetic: "#C0C0C0",
+  beam: "#FF4500",
+  emp: "#00BFFF",
   defense: "#888888",
 } as const;
 
