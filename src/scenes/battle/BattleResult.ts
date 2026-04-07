@@ -7,6 +7,7 @@ import { OPPONENT_MECH } from "../../data/mechs";
 import type { Mech } from "../../types/game";
 import type { BattleRecord } from "../../types/storage";
 import type { BattleManager } from "../../utils/BattleManager";
+import { launchHistoryScene } from "../../utils/lazyScene";
 import { saveBattleHistory } from "../../utils/storage";
 import {
   isMuted,
@@ -78,7 +79,7 @@ export function createHistoryButton(
 
   zone.on("pointerdown", () => {
     onCleanup();
-    scene.scene.start("HistoryScene");
+    launchHistoryScene(scene);
   });
 }
 
@@ -310,7 +311,7 @@ export function showResultScreen(
   });
 
   histZone.on("pointerdown", () => {
-    scene.scene.start("HistoryScene");
+    launchHistoryScene(scene);
   });
   resultOverlay.add(histZone);
 

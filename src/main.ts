@@ -3,7 +3,6 @@
  */
 
 import { BattleScene } from "@/scenes/BattleScene";
-import { HistoryScene } from "@/scenes/HistoryScene";
 import { LobbyScene } from "@/scenes/LobbyScene";
 import { registerSW } from "@/utils/pwa";
 import Phaser from "phaser";
@@ -19,7 +18,7 @@ const config: Phaser.Types.Core.GameConfig = {
     min: { width: 320, height: 240 },
     max: { width: 1920, height: 1080 },
   },
-  scene: [LobbyScene, BattleScene, HistoryScene],
+  scene: [LobbyScene, BattleScene],
 };
 
 new Phaser.Game(config);
