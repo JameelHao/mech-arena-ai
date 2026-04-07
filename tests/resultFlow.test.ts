@@ -14,10 +14,10 @@ function makeMech(
     hp,
     maxHp: hp,
     skills: [
-      { name: "Fire Blast", type: MechType.Kinetic, damage: 40 },
-      { name: "Water Cannon", type: MechType.Beam, damage: 30 },
-      { name: "Thunder Shock", type: MechType.Emp, damage: 25 },
-      { name: "Iron Defense", type: "defense", damage: 0 },
+      { name: "Railgun Salvo", type: MechType.Kinetic, damage: 40 },
+      { name: "Plasma Beam", type: MechType.Beam, damage: 30 },
+      { name: "EMP Pulse", type: MechType.Emp, damage: 25 },
+      { name: "Reactive Armor", type: "defense", damage: 0 },
     ],
   };
 }

@@ -12,10 +12,10 @@ export const MECH_ROSTER: Mech[] = [
     role: "Assault",
     bio: "Agile fire-type striker built for aggressive offense.",
     skills: [
-      { name: "Fire Blast", type: MechType.Kinetic, damage: 40 },
-      { name: "Water Cannon", type: MechType.Beam, damage: 30 },
-      { name: "Thunder Shock", type: MechType.Emp, damage: 25 },
-      { name: "Iron Defense", type: "defense", damage: 0 },
+      { name: "Railgun Salvo", type: MechType.Kinetic, damage: 40 },
+      { name: "Plasma Beam", type: MechType.Beam, damage: 30 },
+      { name: "EMP Pulse", type: MechType.Emp, damage: 25 },
+      { name: "Reactive Armor", type: "defense", damage: 0 },
     ],
   },
   {
@@ -27,10 +27,10 @@ export const MECH_ROSTER: Mech[] = [
     role: "Support",
     bio: "Resilient water-type defender with healing capabilities.",
     skills: [
-      { name: "Water Cannon", type: MechType.Beam, damage: 35 },
-      { name: "Fire Blast", type: MechType.Kinetic, damage: 25 },
-      { name: "Thunder Shock", type: MechType.Emp, damage: 20 },
-      { name: "Iron Defense", type: "defense", damage: 0 },
+      { name: "Plasma Beam", type: MechType.Beam, damage: 35 },
+      { name: "Railgun Salvo", type: MechType.Kinetic, damage: 25 },
+      { name: "EMP Pulse", type: MechType.Emp, damage: 20 },
+      { name: "Reactive Armor", type: "defense", damage: 0 },
     ],
   },
   {
@@ -42,10 +42,10 @@ export const MECH_ROSTER: Mech[] = [
     role: "Specialist",
     bio: "High-speed electric mech with devastating burst damage.",
     skills: [
-      { name: "Thunder Shock", type: MechType.Emp, damage: 45 },
-      { name: "Fire Blast", type: MechType.Kinetic, damage: 30 },
-      { name: "Water Cannon", type: MechType.Beam, damage: 20 },
-      { name: "Iron Defense", type: "defense", damage: 0 },
+      { name: "EMP Pulse", type: MechType.Emp, damage: 45 },
+      { name: "Railgun Salvo", type: MechType.Kinetic, damage: 30 },
+      { name: "Plasma Beam", type: MechType.Beam, damage: 20 },
+      { name: "Reactive Armor", type: "defense", damage: 0 },
     ],
   },
 ];
@@ -62,9 +62,9 @@ export const OPPONENT_MECH: Mech = {
   role: "Tank",
   bio: "Heavy water-type defender with punishing counter-attacks.",
   skills: [
-    { name: "Water Cannon", type: MechType.Beam, damage: 30 },
-    { name: "Fire Blast", type: MechType.Kinetic, damage: 40 },
-    { name: "Thunder Shock", type: MechType.Emp, damage: 25 },
-    { name: "Iron Defense", type: "defense", damage: 0 },
+    { name: "Plasma Beam", type: MechType.Beam, damage: 30 },
+    { name: "Railgun Salvo", type: MechType.Kinetic, damage: 40 },
+    { name: "EMP Pulse", type: MechType.Emp, damage: 25 },
+    { name: "Reactive Armor", type: "defense", damage: 0 },
   ],
 };
