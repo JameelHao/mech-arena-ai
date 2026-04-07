@@ -6,6 +6,7 @@ import Phaser from "phaser";
 import { ASSET_REGISTRY, preloadAllAssets } from "../assets";
 import { MECH_ROSTER, OPPONENT_MECH } from "../data/mechs";
 import { STRATEGY_TEMPLATES } from "../data/strategies";
+import { launchHistoryScene } from "../utils/lazyScene";
 import {
   clearStarterMech,
   hasSeenOnboarding,
@@ -407,7 +408,7 @@ export class LobbyScene extends Phaser.Scene {
     });
     histZone.on("pointerdown", () => {
       this.scale.off("resize", this.handleResize, this);
-      this.scene.start("HistoryScene");
+      launchHistoryScene(this);
     });
 
     // Help button
