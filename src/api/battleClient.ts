@@ -9,6 +9,7 @@ interface BattleAPIRequest {
     opponentHP: number;
     lastMove: string;
     statusEffects: string[];
+    skills: Array<{ name: string; type: string; damage: number }>;
   };
 }
 
@@ -31,6 +32,11 @@ function buildRequestBody(
       opponentHP: state.opponent.hp,
       lastMove: lastLog,
       statusEffects: [],
+      skills: state.player.skills.map((s) => ({
+        name: s.name,
+        type: String(s.type),
+        damage: s.damage,
+      })),
     },
   };
 }

@@ -82,6 +82,9 @@ describe("callBattleAPI", () => {
     assert.equal(body.gameState.playerHP, 80);
     assert.equal(body.gameState.opponentHP, 60);
     assert.equal(body.gameState.lastMove, "[EFF]PlayerMech used Fire Blast!");
+    assert.ok(Array.isArray(body.gameState.skills), "should include skills");
+    assert.equal(body.gameState.skills.length, 4);
+    assert.equal(body.gameState.skills[0].name, "Railgun Salvo");
   });
 
   it("should return null after max retries on network error", async () => {

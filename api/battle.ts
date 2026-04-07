@@ -14,6 +14,7 @@ interface BattleRequest {
     opponentHP: number;
     lastMove: string;
     statusEffects: string[];
+    skills?: Array<{ name: string; type: string; damage: number }>;
   };
 }
 
@@ -99,6 +100,13 @@ export function mockBattleResponse(body: BattleRequest): BattleResponse {
 
 export function buildPrompt(body: BattleRequest): string {
   const { mechPrompt, gameState } = body;
+
+  const skillList = gameState.skills
+    ? gameState.skills
+        .map((s, i) => `${i}: ${s.name} (${s.type}, ${s.damage} dmg)`)
+        .join("\n")
+    : "Skills not available";
+
   return `You are an AI controlling a battle mech. The player has given you this strategy:
 "${mechPrompt}"
 
@@ -109,10 +117,7 @@ Current game state:
 - Active status effects: ${gameState.statusEffects.length > 0 ? gameState.statusEffects.join(", ") : "none"}
 
 Available skills (choose by index):
-0: Laser Beam - High damage, low accuracy
-1: Shield Bash - Medium damage, raises defense
-2: Repair - Heals HP, skips attack
-3: EMP Strike - Disables opponent's next move
+${skillList}
 
 Based on the strategy and game state, choose the best skill index (0-3).
 Respond with EXACTLY this format:
