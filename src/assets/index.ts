@@ -1,9 +1,8 @@
 /**
  * Asset registry — single source of truth for all battle asset key/path mappings.
  *
- * Asset source: mech sprites and portraits were cropped from a Gemini-generated
- * game asset pack (gemini-game-asset-pack.png). Background layers were generated
- * separately. All final PNGs live under src/assets/.
+ * Mech sprites and portraits for the weapon triangle system
+ * (kinetic / beam / emp). All final PNGs live under src/assets/.
  */
 
 import type Phaser from "phaser";
@@ -11,16 +10,20 @@ import { MechType } from "../types/game";
 import type { PortraitState } from "../utils/portraitState";
 
 // Mech sprite PNGs (256x256)
-import fireMechPng from "./mechs/fire-mech.png";
-import waterMechPng from "./mechs/water-mech.png";
+import beamMechPng from "./mechs/beam-mech.png";
+import empMechPng from "./mechs/emp-mech.png";
+import kineticMechPng from "./mechs/kinetic-mech.png";
 
 // Portrait PNGs (64x64) — indexed by MechType
-import playerAngryPng from "./portraits/player-angry.png";
-import playerDefeatedPng from "./portraits/player-defeated.png";
-import playerNormalPng from "./portraits/player-normal.png";
-import waterAngryPng from "./portraits/water-angry.png";
-import waterDefeatedPng from "./portraits/water-defeated.png";
-import waterNormalPng from "./portraits/water-normal.png";
+import beamAngryPng from "./portraits/beam-angry.png";
+import beamDefeatedPng from "./portraits/beam-defeated.png";
+import beamNormalPng from "./portraits/beam-normal.png";
+import empAngryPng from "./portraits/emp-angry.png";
+import empDefeatedPng from "./portraits/emp-defeated.png";
+import empNormalPng from "./portraits/emp-normal.png";
+import kineticAngryPng from "./portraits/kinetic-angry.png";
+import kineticDefeatedPng from "./portraits/kinetic-defeated.png";
+import kineticNormalPng from "./portraits/kinetic-normal.png";
 
 // Background PNGs
 import battleBgCityPng from "./backgrounds/battle-bg-city.png";
@@ -33,22 +36,32 @@ export interface AssetEntry {
 
 export const ASSET_REGISTRY = {
   mechs: {
-    [MechType.Kinetic]: { key: "mech-fire", path: fireMechPng } as AssetEntry,
-    [MechType.Beam]: { key: "mech-water", path: waterMechPng } as AssetEntry,
-    [MechType.Emp]: null, // programmatic fallback until asset is ready
+    [MechType.Kinetic]: {
+      key: "mech-kinetic",
+      path: kineticMechPng,
+    } as AssetEntry,
+    [MechType.Beam]: { key: "mech-beam", path: beamMechPng } as AssetEntry,
+    [MechType.Emp]: { key: "mech-emp", path: empMechPng } as AssetEntry,
   },
   portraits: {
     [MechType.Kinetic]: {
-      normal: { key: "portrait-player-normal", path: playerNormalPng },
-      angry: { key: "portrait-player-angry", path: playerAngryPng },
-      defeated: { key: "portrait-player-defeated", path: playerDefeatedPng },
+      normal: { key: "portrait-kinetic-normal", path: kineticNormalPng },
+      angry: { key: "portrait-kinetic-angry", path: kineticAngryPng },
+      defeated: {
+        key: "portrait-kinetic-defeated",
+        path: kineticDefeatedPng,
+      },
     } as Record<PortraitState, AssetEntry>,
     [MechType.Beam]: {
-      normal: { key: "portrait-water-normal", path: waterNormalPng },
-      angry: { key: "portrait-water-angry", path: waterAngryPng },
-      defeated: { key: "portrait-water-defeated", path: waterDefeatedPng },
+      normal: { key: "portrait-beam-normal", path: beamNormalPng },
+      angry: { key: "portrait-beam-angry", path: beamAngryPng },
+      defeated: { key: "portrait-beam-defeated", path: beamDefeatedPng },
     } as Record<PortraitState, AssetEntry>,
-    [MechType.Emp]: null, // no portrait asset yet
+    [MechType.Emp]: {
+      normal: { key: "portrait-emp-normal", path: empNormalPng },
+      angry: { key: "portrait-emp-angry", path: empAngryPng },
+      defeated: { key: "portrait-emp-defeated", path: empDefeatedPng },
+    } as Record<PortraitState, AssetEntry>,
   },
   backgrounds: {
     city: { key: "bg-city", path: battleBgCityPng } as AssetEntry,
