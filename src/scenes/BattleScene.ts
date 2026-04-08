@@ -200,6 +200,37 @@ export class BattleScene extends Phaser.Scene {
     setTurnIndicator(this.turnIndicator, state.phase);
 
     this.scale.on("resize", this.handleResize, this);
+
+    // Auto-sim for training mode
+    if (this.mode === "training") {
+      setButtonsEnabled(false, this.skillHitZones, this.skillButtons);
+      this.time.delayedCall(500, () => this.startAutoSim());
+    }
+  }
+
+  private async startAutoSim(): Promise<void> {
+    const MAX_TURNS = 3;
+    for (let turn = 0; turn < MAX_TURNS; turn++) {
+      const state = this.battleManager.getState();
+      if (state.phase === TurnPhase.BattleOver) break;
+      if (state.phase !== TurnPhase.PlayerTurn) break;
+
+      const skillIndex = this.battleManager.getRandomAiSkill();
+      await this.onSkillSelected(skillIndex);
+
+      // Wait between turns for observation
+      await new Promise<void>((resolve) => {
+        this.time.delayedCall(300, () => resolve());
+      });
+    }
+
+    // If battle didn't end via KO, show training result
+    const finalState = this.battleManager.getState();
+    if (finalState.phase !== TurnPhase.BattleOver) {
+      const playerHp = finalState.player.hp;
+      const opponentHp = finalState.opponent.hp;
+      this.showResult(playerHp >= opponentHp);
+    }
   }
 
   private buildUI(w: number, h: number): void {
