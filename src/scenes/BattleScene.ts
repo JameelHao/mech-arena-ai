@@ -6,6 +6,7 @@
 import Phaser from "phaser";
 import { callBattleAPI } from "../api/battleClient";
 import { OPPONENT_MECH, PLAYER_MECH } from "../data/mechs";
+import type { TrainingScenario } from "../data/trainingScenarios";
 import { type Mech, TurnPhase } from "../types/game";
 import { BattleManager } from "../utils/BattleManager";
 import type { MechSprite, PortraitState } from "../utils/MechGraphics";
@@ -124,15 +125,21 @@ export class BattleScene extends Phaser.Scene {
 
   // Battle mode: "battle" (formal, recorded) or "training" (unrecorded)
   public mode: "battle" | "training" = "battle";
+  private scenario?: TrainingScenario;
 
   constructor() {
     super({ key: "BattleScene" });
     console.log("[BattleScene] constructor called");
   }
 
-  init(data?: { selectedMech?: Mech; mode?: "battle" | "training" }): void {
+  init(data?: {
+    selectedMech?: Mech;
+    mode?: "battle" | "training";
+    scenario?: TrainingScenario;
+  }): void {
     this.playerMech = data?.selectedMech ?? PLAYER_MECH;
     this.mode = data?.mode ?? "battle";
+    this.scenario = data?.scenario;
   }
 
   preload(): void {
@@ -152,9 +159,14 @@ export class BattleScene extends Phaser.Scene {
   create(): void {
     console.log("[BattleScene] create() start");
     this.battleManager = new BattleManager();
+    const opponent = JSON.parse(JSON.stringify(OPPONENT_MECH));
+    if (this.scenario) {
+      opponent.hp = this.scenario.opponentHp;
+      opponent.maxHp = this.scenario.opponentHp;
+    }
     this.battleManager.initBattle(
       JSON.parse(JSON.stringify(this.playerMech)),
-      JSON.parse(JSON.stringify(OPPONENT_MECH)),
+      opponent,
     );
 
     this.displayedOpponentRatio = 1;
@@ -203,7 +215,8 @@ export class BattleScene extends Phaser.Scene {
 
     // Auto-sim for both modes (AI-driven battle is the default)
     setButtonsEnabled(false, this.skillHitZones, this.skillButtons);
-    const maxTurns = this.mode === "training" ? 3 : 20;
+    const maxTurns =
+      this.scenario?.maxTurns ?? (this.mode === "training" ? 3 : 20);
     this.time.delayedCall(500, () => this.startAutoSim(maxTurns));
   }
 
