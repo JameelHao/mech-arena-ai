@@ -201,16 +201,14 @@ export class BattleScene extends Phaser.Scene {
 
     this.scale.on("resize", this.handleResize, this);
 
-    // Auto-sim for training mode
-    if (this.mode === "training") {
-      setButtonsEnabled(false, this.skillHitZones, this.skillButtons);
-      this.time.delayedCall(500, () => this.startAutoSim());
-    }
+    // Auto-sim for both modes (AI-driven battle is the default)
+    setButtonsEnabled(false, this.skillHitZones, this.skillButtons);
+    const maxTurns = this.mode === "training" ? 3 : 20;
+    this.time.delayedCall(500, () => this.startAutoSim(maxTurns));
   }
 
-  private async startAutoSim(): Promise<void> {
-    const MAX_TURNS = 3;
-    for (let turn = 0; turn < MAX_TURNS; turn++) {
+  private async startAutoSim(maxTurns: number): Promise<void> {
+    for (let turn = 0; turn < maxTurns; turn++) {
       const state = this.battleManager.getState();
       if (state.phase === TurnPhase.BattleOver) break;
       if (state.phase !== TurnPhase.PlayerTurn) break;
@@ -224,7 +222,7 @@ export class BattleScene extends Phaser.Scene {
       });
     }
 
-    // If battle didn't end via KO, show training result
+    // If battle didn't end via KO, show result
     const finalState = this.battleManager.getState();
     if (finalState.phase !== TurnPhase.BattleOver) {
       const playerHp = finalState.player.hp;
