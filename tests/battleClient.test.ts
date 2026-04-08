@@ -1,5 +1,17 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it, mock } from "node:test";
+
+// Mock localStorage before importing modules that use it
+if (typeof globalThis.localStorage === "undefined") {
+  const store = new Map<string, string>();
+  (globalThis as Record<string, unknown>).localStorage = {
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => store.set(k, v),
+    removeItem: (k: string) => store.delete(k),
+    clear: () => store.clear(),
+  };
+}
+
 import { callBattleAPI } from "../src/api/battleClient";
 import type { BattleState } from "../src/types/game";
 import { MechType, TurnPhase } from "../src/types/game";

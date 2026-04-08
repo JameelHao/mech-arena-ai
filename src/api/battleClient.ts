@@ -1,6 +1,8 @@
 /** Battle API client - calls /api/battle for AI move selection */
 
+import { COMBAT_CORES } from "../data/strategies";
 import type { BattleState } from "../types/game";
+import { loadCombatCore } from "../utils/storage";
 
 interface BattleAPIRequest {
   mechPrompt: string;
@@ -10,6 +12,7 @@ interface BattleAPIRequest {
     lastMove: string;
     statusEffects: string[];
     skills: Array<{ name: string; type: string; damage: number }>;
+    combatCore?: { name: string; prompt: string };
   };
 }
 
@@ -37,6 +40,10 @@ function buildRequestBody(
         type: String(s.type),
         damage: s.damage,
       })),
+      combatCore: (() => {
+        const core = COMBAT_CORES[loadCombatCore()];
+        return core ? { name: core.name, prompt: core.prompt } : undefined;
+      })(),
     },
   };
 }
