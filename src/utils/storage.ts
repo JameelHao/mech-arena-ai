@@ -267,10 +267,14 @@ export function saveCombatCore(index: number): void {
 }
 
 export function loadCombatCore(): number {
-  const val = localStorage.getItem(COMBAT_CORE_KEY);
-  if (val === null) return 0;
-  const idx = Number.parseInt(val, 10);
-  return Number.isNaN(idx) ? 0 : idx;
+  try {
+    const val = localStorage.getItem(COMBAT_CORE_KEY);
+    if (val === null) return 0;
+    const idx = Number.parseInt(val, 10);
+    return Number.isNaN(idx) ? 0 : idx;
+  } catch {
+    return 0;
+  }
 }
 
 export function hasCombatCore(): boolean {

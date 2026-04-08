@@ -94,6 +94,53 @@ describe("buildPrompt", () => {
 
     assert.ok(prompt.includes("Skills not available"));
   });
+
+  it("should include Combat Core personality when provided", () => {
+    const prompt = buildPrompt({
+      mechPrompt: "Focus fire",
+      gameState: {
+        playerHP: 100,
+        opponentHP: 100,
+        lastMove: "",
+        statusEffects: [],
+        skills: TEST_SKILLS,
+        combatCore: { name: "Aggressive", prompt: "Always attack first" },
+      },
+    });
+
+    assert.ok(prompt.includes("Aggressive"), "should contain core name");
+    assert.ok(
+      prompt.includes("Always attack first"),
+      "should contain core prompt",
+    );
+    assert.ok(
+      prompt.includes("Focus fire"),
+      "should still contain player instructions",
+    );
+    assert.ok(
+      prompt.includes("Base combat personality"),
+      "should have personality section",
+    );
+    assert.ok(
+      prompt.includes("Additional player instructions"),
+      "should have player section",
+    );
+  });
+
+  it("should work without Combat Core (backward compat)", () => {
+    const prompt = buildPrompt({
+      mechPrompt: "test",
+      gameState: {
+        playerHP: 100,
+        opponentHP: 100,
+        lastMove: "",
+        statusEffects: [],
+        skills: TEST_SKILLS,
+      },
+    });
+
+    assert.ok(!prompt.includes("Base combat personality"));
+  });
 });
 
 describe("parseResponse", () => {

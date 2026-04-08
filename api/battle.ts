@@ -15,6 +15,7 @@ interface BattleRequest {
     lastMove: string;
     statusEffects: string[];
     skills?: Array<{ name: string; type: string; damage: number }>;
+    combatCore?: { name: string; prompt: string };
   };
 }
 
@@ -66,17 +67,25 @@ function isMockMode(): boolean {
 export function mockBattleResponse(body: BattleRequest): BattleResponse {
   const { gameState } = body;
   const hpRatio = gameState.playerHP / 100;
+  const coreName = gameState.combatCore?.name?.toLowerCase() ?? "balanced";
 
-  // Low HP → 50% chance to use defense
-  if (hpRatio < 0.3 && Math.random() < 0.5) {
+  // Low HP → defense chance varies by core
+  const defenseThreshold =
+    coreName === "defensive" ? 0.8 : coreName === "aggressive" ? 0.2 : 0.5;
+  if (hpRatio < 0.3 && Math.random() < defenseThreshold) {
     return {
       move: 3,
-      reasoning: "[MOCK] HP critical — activating Reactive Armor",
+      reasoning: `[MOCK] HP critical — activating Reactive Armor (${coreName})`,
     };
   }
 
-  // Weighted random favoring attack skills (indices 0-2)
-  const weights = [0.4, 0.3, 0.2, 0.1];
+  // Weighted random — adjust by combat core personality
+  const weights =
+    coreName === "aggressive"
+      ? [0.5, 0.25, 0.2, 0.05]
+      : coreName === "defensive"
+        ? [0.2, 0.2, 0.2, 0.4]
+        : [0.4, 0.3, 0.2, 0.1];
   const roll = Math.random();
   let cumulative = 0;
   for (let i = 0; i < weights.length; i++) {
@@ -107,10 +116,17 @@ export function buildPrompt(body: BattleRequest): string {
         .join("\n")
     : "Skills not available";
 
-  return `You are an AI controlling a battle mech. The player has given you this strategy:
-"${mechPrompt}"
+  const coreSection = gameState.combatCore
+    ? `Base combat personality (${gameState.combatCore.name}): "${gameState.combatCore.prompt}"\n\n`
+    : "";
 
-Current game state:
+  const playerSection = mechPrompt.trim()
+    ? `Additional player instructions: "${mechPrompt}"\n\n`
+    : "";
+
+  return `You are an AI controlling a battle mech.
+
+${coreSection}${playerSection}Current game state:
 - Your HP: ${gameState.playerHP}
 - Opponent HP: ${gameState.opponentHP}
 - Opponent's last move: ${gameState.lastMove || "none"}
