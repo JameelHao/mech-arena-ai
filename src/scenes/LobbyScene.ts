@@ -4,7 +4,7 @@
 
 import Phaser from "phaser";
 import { ASSET_REGISTRY, preloadAllAssets } from "../assets";
-import { MECH_ROSTER, OPPONENT_MECH } from "../data/mechs";
+import { OPPONENT_MECH, STARTER_FRAME } from "../data/mechs";
 import { COMBAT_CORES } from "../data/strategies";
 import { TRAINING_SCENARIOS } from "../data/trainingScenarios";
 import { launchHistoryScene } from "../utils/lazyScene";
@@ -15,7 +15,6 @@ import {
   hasStarterMech,
   loadCombatCore,
   loadCommanderName,
-  loadStarterMech,
   markOnboardingSeen,
   saveCombatCore,
   saveCommanderName,
@@ -47,8 +46,6 @@ const TYPE_COLORS: Record<string, string> = {
 };
 
 export class LobbyScene extends Phaser.Scene {
-  private selectedIndex = 0;
-
   constructor() {
     super({ key: "LobbyScene" });
   }
@@ -58,7 +55,6 @@ export class LobbyScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.selectedIndex = hasStarterMech() ? loadStarterMech() : 0;
     const { width: w, height: h } = this.scale;
     this.buildUI(w, h);
     this.scale.on("resize", this.handleResize, this);
@@ -68,10 +64,6 @@ export class LobbyScene extends Phaser.Scene {
     } else if (!hasSeenOnboarding()) {
       this.showOnboarding();
     }
-  }
-
-  private selectedMech() {
-    return MECH_ROSTER[this.selectedIndex];
   }
 
   private buildUI(w: number, h: number): void {
@@ -97,9 +89,6 @@ export class LobbyScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    // Mech roster selection
-    this.drawRosterSelection(w, h);
-
     // VS section
     this.drawMechPreview(w, h);
 
@@ -111,50 +100,6 @@ export class LobbyScene extends Phaser.Scene {
 
     // Buttons
     this.drawButtons(w, h);
-  }
-
-  private drawRosterSelection(w: number, h: number): void {
-    const cardW = Math.min(w * 0.25, 120);
-    const cardH = 32;
-    const gap = 8;
-    const totalW = MECH_ROSTER.length * (cardW + gap) - gap;
-    const startX = (w - totalW) / 2;
-    const y = h * 0.12;
-    const fontSize = `${Math.max(10, Math.floor(w * 0.014))}px`;
-
-    for (let i = 0; i < MECH_ROSTER.length; i++) {
-      const mech = MECH_ROSTER[i];
-      const x = startX + i * (cardW + gap);
-      const isSelected = i === this.selectedIndex;
-
-      const bg = this.add.graphics();
-      bg.fillStyle(isSelected ? 0x334433 : COLORS.buttonBg, 1);
-      bg.fillRoundedRect(x, y, cardW, cardH, 6);
-      bg.lineStyle(2, isSelected ? COLORS.accentHex : COLORS.panelBorder);
-      bg.strokeRoundedRect(x, y, cardW, cardH, 6);
-
-      const label = mech.codename ?? mech.name;
-      const color = isSelected
-        ? COLORS.accent
-        : (TYPE_COLORS[mech.type] ?? COLORS.text);
-      this.add
-        .text(x + cardW / 2, y + cardH / 2, label, {
-          fontSize,
-          color,
-          fontStyle: isSelected ? "bold" : "normal",
-        })
-        .setOrigin(0.5);
-
-      const zone = this.add
-        .zone(x, y, cardW, cardH)
-        .setOrigin(0)
-        .setInteractive({ useHandCursor: true });
-
-      zone.on("pointerdown", () => {
-        this.selectedIndex = i;
-        this.buildUI(w, h);
-      });
-    }
   }
 
   private drawMechPreview(w: number, h: number): void {
@@ -176,7 +121,7 @@ export class LobbyScene extends Phaser.Scene {
 
     // Player side
     const playerX = panelX + panelW * 0.25;
-    const playerPortrait = ASSET_REGISTRY.portraits[this.selectedMech().type];
+    const playerPortrait = ASSET_REGISTRY.portraits[STARTER_FRAME.type];
     if (playerPortrait) {
       const key = playerPortrait.normal.key;
       if (this.textures.exists(key)) {
@@ -189,25 +134,25 @@ export class LobbyScene extends Phaser.Scene {
       .text(
         playerX,
         playerNameY,
-        this.selectedMech().codename ?? this.selectedMech().name,
+        STARTER_FRAME.codename ?? STARTER_FRAME.name,
         {
           fontSize,
-          color: TYPE_COLORS[this.selectedMech().type] ?? COLORS.text,
+          color: TYPE_COLORS[STARTER_FRAME.type] ?? COLORS.text,
           fontStyle: "bold",
         },
       )
       .setOrigin(0.5, 0);
-    if (this.selectedMech().role) {
+    if (STARTER_FRAME.role) {
       this.add
-        .text(playerX, playerNameY + 16, this.selectedMech().role as string, {
+        .text(playerX, playerNameY + 16, STARTER_FRAME.role as string, {
           fontSize: subFontSize,
           color: COLORS.dimText,
         })
         .setOrigin(0.5, 0);
     }
-    if (this.selectedMech().bio) {
+    if (STARTER_FRAME.bio) {
       this.add
-        .text(playerX, playerNameY + 30, this.selectedMech().bio as string, {
+        .text(playerX, playerNameY + 30, STARTER_FRAME.bio as string, {
           fontSize: `${Math.max(9, Math.floor(w * 0.012))}px`,
           color: "#777777",
           wordWrap: { width: panelW * 0.35 },
@@ -283,8 +228,8 @@ export class LobbyScene extends Phaser.Scene {
       })
       .setOrigin(0, 0);
 
-    for (let i = 0; i < this.selectedMech().skills.length; i++) {
-      const skill = this.selectedMech().skills[i];
+    for (let i = 0; i < STARTER_FRAME.skills.length; i++) {
+      const skill = STARTER_FRAME.skills[i];
       const y = panelY + lineH * (i + 1);
       const typeColor = TYPE_COLORS[skill.type] ?? COLORS.defense;
       const dmgText =
@@ -396,7 +341,7 @@ export class LobbyScene extends Phaser.Scene {
     startZone.on("pointerdown", () => {
       this.scale.off("resize", this.handleResize, this);
       this.scene.start("BattleScene", {
-        selectedMech: this.selectedMech(),
+        selectedMech: STARTER_FRAME,
         mode: "battle",
       });
     });
@@ -621,7 +566,7 @@ export class LobbyScene extends Phaser.Scene {
         overlay.destroy();
         this.scale.off("resize", this.handleResize, this);
         this.scene.start("BattleScene", {
-          selectedMech: this.selectedMech(),
+          selectedMech: STARTER_FRAME,
           mode: "training",
           scenario,
         });
@@ -647,7 +592,7 @@ export class LobbyScene extends Phaser.Scene {
     overlay.add(cancelZone);
   }
 
-  // --- Mech Binding ---
+  // --- Mech Binding (single starter frame) ---
 
   private showMechBinding(): void {
     const { width: w, height: h } = this.scale;
@@ -682,112 +627,34 @@ export class LobbyScene extends Phaser.Scene {
       "border-radius:6px;outline:none;text-align:center;z-index:100;";
     document.body.appendChild(nameInput);
 
-    overlay.add(
-      this.add
-        .text(w / 2, h * 0.17, "Select your starter mech", {
-          fontSize: `${Math.max(12, Math.floor(w * 0.018))}px`,
-          color: "#888888",
-        })
-        .setOrigin(0.5),
-    );
+    // Starter frame display
+    const frameLabel = this.add
+      .text(w / 2, h * 0.3, "Your Starter Frame: FALCON UNIT", {
+        fontSize: `${Math.max(14, Math.floor(w * 0.022))}px`,
+        color: COLORS.text,
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+    overlay.add(frameLabel);
 
-    let bindingIndex = 0;
-    const cardW = Math.min(w * 0.85, 400);
-    const cardH = Math.max(60, h * 0.12);
-    const cardX = (w - cardW) / 2;
-    const startY = h * 0.22;
-    const gap = 8;
-    const fontSize = `${Math.max(12, Math.floor(w * 0.018))}px`;
-    const subFont = `${Math.max(10, Math.floor(w * 0.014))}px`;
-
-    const drawCards = () => {
-      // Remove old card elements (tagged)
-      for (const obj of overlay.list.filter((o) =>
-        (o as Phaser.GameObjects.GameObject).getData("card"),
-      )) {
-        obj.destroy();
+    const portraitSize = Math.min(96, h * 0.15);
+    const portrait = ASSET_REGISTRY.portraits[STARTER_FRAME.type];
+    if (portrait) {
+      const key = portrait.normal.key;
+      if (this.textures.exists(key)) {
+        overlay.add(
+          this.add
+            .image(w / 2, h * 0.45, key)
+            .setDisplaySize(portraitSize, portraitSize),
+        );
       }
-
-      for (let i = 0; i < MECH_ROSTER.length; i++) {
-        const mech = MECH_ROSTER[i];
-        const y = startY + i * (cardH + gap);
-        const isSelected = i === bindingIndex;
-
-        const cardBg = this.add.graphics();
-        cardBg.setData("card", true);
-        cardBg.fillStyle(isSelected ? 0x1a3a1a : COLORS.panelBg, 1);
-        cardBg.fillRoundedRect(cardX, y, cardW, cardH, 8);
-        cardBg.lineStyle(2, isSelected ? COLORS.accentHex : COLORS.panelBorder);
-        cardBg.strokeRoundedRect(cardX, y, cardW, cardH, 8);
-        overlay.add(cardBg);
-
-        const typeColor = TYPE_COLORS[mech.type] ?? COLORS.text;
-
-        // Portrait
-        const portraitSize = Math.min(48, cardH - 12);
-        const portrait = ASSET_REGISTRY.portraits[mech.type];
-        if (portrait) {
-          const key = portrait.normal.key;
-          if (this.textures.exists(key)) {
-            const img = this.add
-              .image(cardX + 10 + portraitSize / 2, y + cardH / 2, key)
-              .setDisplaySize(portraitSize, portraitSize)
-              .setData("card", true);
-            overlay.add(img);
-          }
-        }
-
-        const textX = cardX + 10 + portraitSize + 12;
-
-        const name = this.add
-          .text(textX, y + 8, mech.codename ?? mech.name, {
-            fontSize,
-            color: typeColor,
-            fontStyle: "bold",
-          })
-          .setData("card", true);
-        overlay.add(name);
-
-        const role = this.add
-          .text(textX, y + 26, `${mech.role ?? mech.type.toUpperCase()}`, {
-            fontSize: subFont,
-            color: "#888888",
-          })
-          .setData("card", true);
-        overlay.add(role);
-
-        if (mech.bio) {
-          const bio = this.add
-            .text(textX, y + 40, mech.bio, {
-              fontSize: `${Math.max(9, Math.floor(w * 0.012))}px`,
-              color: "#666666",
-              wordWrap: { width: cardW - portraitSize - 40 },
-            })
-            .setData("card", true);
-          overlay.add(bio);
-        }
-
-        const zone = this.add
-          .zone(cardX, y, cardW, cardH)
-          .setOrigin(0)
-          .setInteractive({ useHandCursor: true })
-          .setData("card", true);
-
-        zone.on("pointerdown", () => {
-          bindingIndex = i;
-          drawCards();
-        });
-        overlay.add(zone);
-      }
-    };
-
-    drawCards();
+    }
 
     // Confirm button
     const btnW = Math.min(w * 0.5, 220);
     const btnH = 44;
     const btnX = w / 2 - btnW / 2;
-    const btnY = h * 0.22 + MECH_ROSTER.length * (cardH + gap) + 16;
+    const btnY = h * 0.6;
 
     const confirmBg = this.add.graphics();
     confirmBg.fillStyle(COLORS.accentHex, 1);
@@ -796,7 +663,7 @@ export class LobbyScene extends Phaser.Scene {
 
     overlay.add(
       this.add
-        .text(w / 2, btnY + btnH / 2, "Choose This Mech", {
+        .text(w / 2, btnY + btnH / 2, "Start", {
           fontSize: `${Math.max(15, Math.floor(w * 0.023))}px`,
           color: "#000000",
           fontStyle: "bold",
@@ -822,8 +689,7 @@ export class LobbyScene extends Phaser.Scene {
     confirmZone.on("pointerdown", () => {
       saveCommanderName(nameInput.value);
       nameInput.remove();
-      saveStarterMech(bindingIndex);
-      this.selectedIndex = bindingIndex;
+      saveStarterMech(0);
       overlay.destroy();
       this.buildUI(w, h);
       this.showStrategyPicker();

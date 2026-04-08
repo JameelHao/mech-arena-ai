@@ -53,6 +53,9 @@ export const MECH_ROSTER: Mech[] = [
 /** Default player mech (first in roster). */
 export const PLAYER_MECH: Mech = MECH_ROSTER[0];
 
+/** The single canonical starter frame for all new players in MVP. */
+export const STARTER_FRAME: Mech = MECH_ROSTER[0];
+
 export const OPPONENT_MECH: Mech = {
   name: "Enemy Mech",
   type: MechType.Beam,
