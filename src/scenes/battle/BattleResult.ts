@@ -4,11 +4,12 @@
 
 import type Phaser from "phaser";
 import { OPPONENT_MECH } from "../../data/mechs";
+import { COMBAT_CORES } from "../../data/strategies";
 import type { Mech } from "../../types/game";
 import type { BattleRecord } from "../../types/storage";
 import type { BattleManager } from "../../utils/BattleManager";
 import { launchHistoryScene } from "../../utils/lazyScene";
-import { saveBattleHistory } from "../../utils/storage";
+import { loadCombatCore, saveBattleHistory } from "../../utils/storage";
 import {
   isMuted,
   loadSettings,
@@ -143,6 +144,8 @@ export function saveBattleRecord(
     opponentHpLeft: state.opponent.hp,
     prompt: mechPrompt.trim() || undefined,
     battleLog: state.log.slice(0, 100),
+    playerMechCodename: playerMech.codename,
+    combatCoreName: COMBAT_CORES[loadCombatCore()]?.name,
   };
   saveBattleHistory(record);
 }

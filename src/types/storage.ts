@@ -13,6 +13,8 @@ export interface BattleRecord {
   opponentHpLeft: number;
   prompt?: string;
   battleLog?: string[];
+  playerMechCodename?: string;
+  combatCoreName?: string;
 }
 
 export interface GameSettings {

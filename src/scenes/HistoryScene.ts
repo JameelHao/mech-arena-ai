@@ -425,6 +425,32 @@ export class HistoryScene extends Phaser.Scene {
     this.detailOverlay.add(title);
     y += lineH + 10;
 
+    // Mech identity
+    if (record.playerMechCodename) {
+      this.detailOverlay.add(
+        this.add
+          .text(cx, y, `Mech: ${record.playerMechCodename}`, {
+            fontSize,
+            color: COLORS.accent,
+          })
+          .setOrigin(0.5, 0),
+      );
+      y += lineH;
+    }
+
+    // Combat Core
+    if (record.combatCoreName) {
+      this.detailOverlay.add(
+        this.add
+          .text(cx, y, `Core: ${record.combatCoreName}`, {
+            fontSize,
+            color: COLORS.dimText,
+          })
+          .setOrigin(0.5, 0),
+      );
+      y += lineH;
+    }
+
     // Matchup
     const matchup = `${record.playerMechType.toUpperCase()} vs ${record.opponentMechType.toUpperCase()}`;
     this.detailOverlay.add(
