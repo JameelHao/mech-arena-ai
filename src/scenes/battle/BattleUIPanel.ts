@@ -19,6 +19,7 @@ import {
   computeBackgroundLayout,
 } from "../../utils/backgroundConfig";
 import { LOG_MAX_LINES, parseLogMessage } from "../../utils/logColors";
+import { loadCommanderName } from "../../utils/storage";
 
 const COLORS = {
   text: "#ffffff",
@@ -354,7 +355,7 @@ export function createPlayerArea(
     .text(
       panelX + 10,
       panelY + 6,
-      `${playerMech.codename ?? playerMech.name}  Lv.5`,
+      `${loadCommanderName()} — ${playerMech.codename ?? playerMech.name}`,
       {
         fontSize: `${Math.max(11, Math.floor(w * 0.018))}px`,
         color: COLORS.text,

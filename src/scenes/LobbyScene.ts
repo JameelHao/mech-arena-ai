@@ -11,9 +11,11 @@ import {
   clearStarterMech,
   hasSeenOnboarding,
   hasStarterMech,
+  loadCommanderName,
   loadMechPrompt,
   loadStarterMech,
   markOnboardingSeen,
+  saveCommanderName,
   saveMechPrompt,
   saveStarterMech,
 } from "../utils/storage";
@@ -77,10 +79,18 @@ export class LobbyScene extends Phaser.Scene {
 
     // Title
     this.add
-      .text(w / 2, h * 0.06, "MECH ARENA AI", {
+      .text(w / 2, h * 0.05, "MECH ARENA AI", {
         fontSize: `${Math.max(24, Math.floor(w * 0.04))}px`,
         color: COLORS.accent,
         fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+
+    // Commander name
+    this.add
+      .text(w / 2, h * 0.1, `Commander: ${loadCommanderName()}`, {
+        fontSize: `${Math.max(11, Math.floor(w * 0.016))}px`,
+        color: "#888888",
       })
       .setOrigin(0.5);
 
@@ -483,7 +493,7 @@ export class LobbyScene extends Phaser.Scene {
     // Title
     overlay.add(
       this.add
-        .text(w / 2, h * 0.06, "CHOOSE YOUR MECH", {
+        .text(w / 2, h * 0.04, "SET UP YOUR IDENTITY", {
           fontSize: `${Math.max(20, Math.floor(w * 0.035))}px`,
           color: COLORS.accent,
           fontStyle: "bold",
@@ -491,9 +501,21 @@ export class LobbyScene extends Phaser.Scene {
         .setOrigin(0.5),
     );
 
+    // Commander name input (DOM overlay)
+    const nameInput = document.createElement("input");
+    nameInput.type = "text";
+    nameInput.maxLength = 20;
+    nameInput.placeholder = "Commander Name (optional)";
+    nameInput.style.cssText =
+      "position:fixed;top:12%;left:50%;transform:translateX(-50%);" +
+      "width:200px;max-width:80vw;padding:6px 10px;font-size:14px;" +
+      "font-family:monospace;background:#2a2a2a;color:#0f8;border:1px solid #444;" +
+      "border-radius:6px;outline:none;text-align:center;z-index:100;";
+    document.body.appendChild(nameInput);
+
     overlay.add(
       this.add
-        .text(w / 2, h * 0.11, "Select your starter mech to begin", {
+        .text(w / 2, h * 0.17, "Select your starter mech", {
           fontSize: `${Math.max(12, Math.floor(w * 0.018))}px`,
           color: "#888888",
         })
@@ -504,7 +526,7 @@ export class LobbyScene extends Phaser.Scene {
     const cardW = Math.min(w * 0.85, 400);
     const cardH = Math.max(60, h * 0.12);
     const cardX = (w - cardW) / 2;
-    const startY = h * 0.17;
+    const startY = h * 0.22;
     const gap = 8;
     const fontSize = `${Math.max(12, Math.floor(w * 0.018))}px`;
     const subFont = `${Math.max(10, Math.floor(w * 0.014))}px`;
@@ -596,7 +618,7 @@ export class LobbyScene extends Phaser.Scene {
     const btnW = Math.min(w * 0.5, 220);
     const btnH = 44;
     const btnX = w / 2 - btnW / 2;
-    const btnY = h * 0.17 + MECH_ROSTER.length * (cardH + gap) + 16;
+    const btnY = h * 0.22 + MECH_ROSTER.length * (cardH + gap) + 16;
 
     const confirmBg = this.add.graphics();
     confirmBg.fillStyle(COLORS.accentHex, 1);
@@ -629,6 +651,8 @@ export class LobbyScene extends Phaser.Scene {
       confirmBg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
     });
     confirmZone.on("pointerdown", () => {
+      saveCommanderName(nameInput.value);
+      nameInput.remove();
       saveStarterMech(bindingIndex);
       this.selectedIndex = bindingIndex;
       overlay.destroy();
