@@ -10,6 +10,7 @@ import type { BattleRecord } from "../../types/storage";
 import type { BattleManager } from "../../utils/BattleManager";
 import { launchHistoryScene } from "../../utils/lazyScene";
 import { loadCombatCore, saveBattleHistory } from "../../utils/storage";
+import { analyzeTraining } from "../../utils/trainingAnalyzer";
 import {
   isMuted,
   loadSettings,
@@ -238,11 +239,40 @@ export function showResultScreen(
     .setOrigin(0.5);
   resultOverlay.add(strategyText);
 
+  // Training summary (only in training mode)
+  let trainingSummaryOffset = 0;
+  if (mode === "training") {
+    const coreName = COMBAT_CORES[loadCombatCore()]?.name ?? "Balanced";
+    const analysis = analyzeTraining(state.log, coreName);
+    const tsFontSize = `${Math.max(10, Math.floor(w * 0.014))}px`;
+    const tsY = h * 0.56;
+
+    const statsLine = `Attacks: ${analysis.attackCount}  |  Defense: ${analysis.defenseCount}  |  Dmg: ${analysis.damageDealt}`;
+    resultOverlay.add(
+      scene.add
+        .text(w / 2, tsY, statsLine, { fontSize: tsFontSize, color: "#aaaaaa" })
+        .setOrigin(0.5),
+    );
+
+    resultOverlay.add(
+      scene.add
+        .text(w / 2, tsY + 16, analysis.suggestion, {
+          fontSize: tsFontSize,
+          color: COLORS.accent,
+          wordWrap: { width: w * 0.65 },
+          align: "center",
+        })
+        .setOrigin(0.5, 0),
+    );
+
+    trainingSummaryOffset = 0.06;
+  }
+
   // Play Again button
   const btnW = Math.min(w * 0.3, 200);
   const btnH = 44;
   const btnX = w / 2 - btnW / 2;
-  const btnY = h * 0.58;
+  const btnY = h * (0.58 + trainingSummaryOffset);
 
   const btnBg = scene.add.graphics();
   btnBg.fillStyle(COLORS.accentHex, 1);
