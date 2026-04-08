@@ -5,16 +5,18 @@
 import Phaser from "phaser";
 import { ASSET_REGISTRY, preloadAllAssets } from "../assets";
 import { MECH_ROSTER, OPPONENT_MECH } from "../data/mechs";
-import { STRATEGY_TEMPLATES } from "../data/strategies";
+import { COMBAT_CORES } from "../data/strategies";
 import { launchHistoryScene } from "../utils/lazyScene";
 import {
   clearStarterMech,
+  hasCombatCore,
   hasSeenOnboarding,
   hasStarterMech,
+  loadCombatCore,
   loadCommanderName,
-  loadMechPrompt,
   loadStarterMech,
   markOnboardingSeen,
+  saveCombatCore,
   saveCommanderName,
   saveMechPrompt,
   saveStarterMech,
@@ -317,16 +319,15 @@ export class LobbyScene extends Phaser.Scene {
     bg.fillStyle(COLORS.panelBg, 0.6);
     bg.fillRoundedRect(panelX, panelY, panelW, panelH, 6);
 
-    const prompt = loadMechPrompt();
     let label: string;
     let color: string;
 
-    if (prompt.trim()) {
-      const summary = prompt.length > 60 ? `${prompt.slice(0, 57)}...` : prompt;
-      label = `\u26A1 Strategy: ${summary}`;
+    if (hasCombatCore()) {
+      const core = COMBAT_CORES[loadCombatCore()] ?? COMBAT_CORES[0];
+      label = `${core.icon} Combat Core: ${core.name}`;
       color = COLORS.accent;
     } else {
-      label = "No strategy set — enter one in battle to guide your AI";
+      label = "No Combat Core set \u2014 choose one to guide your AI";
       color = COLORS.dimText;
     }
 
@@ -334,9 +335,26 @@ export class LobbyScene extends Phaser.Scene {
       .text(panelX + 12, panelY + panelH / 2, label, {
         fontSize,
         color,
-        wordWrap: { width: panelW - 24 },
+        wordWrap: { width: panelW - 60 },
       })
       .setOrigin(0, 0.5);
+
+    // Change button
+    this.add
+      .text(panelX + panelW - 12, panelY + panelH / 2, "Change", {
+        fontSize: `${Math.max(10, Math.floor(w * 0.013))}px`,
+        color: COLORS.accent,
+      })
+      .setOrigin(1, 0.5);
+
+    const changeZone = this.add
+      .zone(panelX + panelW - 60, panelY, 60, panelH)
+      .setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+
+    changeZone.on("pointerdown", () => {
+      this.showStrategyPicker();
+    });
   }
 
   private drawButtons(w: number, h: number): void {
@@ -677,7 +695,7 @@ export class LobbyScene extends Phaser.Scene {
     // Title
     overlay.add(
       this.add
-        .text(w / 2, h * 0.06, "CHOOSE YOUR STRATEGY", {
+        .text(w / 2, h * 0.06, "CHOOSE YOUR COMBAT CORE", {
           fontSize: `${Math.max(20, Math.floor(w * 0.035))}px`,
           color: COLORS.accent,
           fontStyle: "bold",
@@ -687,7 +705,7 @@ export class LobbyScene extends Phaser.Scene {
 
     overlay.add(
       this.add
-        .text(w / 2, h * 0.11, "Pick a battle style to start with", {
+        .text(w / 2, h * 0.11, "Pick a combat core to guide your AI", {
           fontSize: `${Math.max(12, Math.floor(w * 0.018))}px`,
           color: "#888888",
         })
@@ -710,8 +728,8 @@ export class LobbyScene extends Phaser.Scene {
         obj.destroy();
       }
 
-      for (let i = 0; i < STRATEGY_TEMPLATES.length; i++) {
-        const tmpl = STRATEGY_TEMPLATES[i];
+      for (let i = 0; i < COMBAT_CORES.length; i++) {
+        const tmpl = COMBAT_CORES[i];
         const y = startY + i * (cardH + gap);
         const isSelected = i === pickerIndex;
 
@@ -769,7 +787,7 @@ export class LobbyScene extends Phaser.Scene {
     const btnW = Math.min(w * 0.5, 220);
     const btnH = 44;
     const btnX = w / 2 - btnW / 2;
-    const btnY = startY + STRATEGY_TEMPLATES.length * (cardH + gap) + 12;
+    const btnY = startY + COMBAT_CORES.length * (cardH + gap) + 12;
 
     const confirmBg = this.add.graphics();
     confirmBg.fillStyle(COLORS.accentHex, 1);
@@ -778,7 +796,7 @@ export class LobbyScene extends Phaser.Scene {
 
     overlay.add(
       this.add
-        .text(w / 2, btnY + btnH / 2, "Use This Strategy", {
+        .text(w / 2, btnY + btnH / 2, "Activate Core", {
           fontSize: `${Math.max(15, Math.floor(w * 0.023))}px`,
           color: "#000000",
           fontStyle: "bold",
@@ -802,8 +820,10 @@ export class LobbyScene extends Phaser.Scene {
       confirmBg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
     });
     confirmZone.on("pointerdown", () => {
-      saveMechPrompt(STRATEGY_TEMPLATES[pickerIndex].prompt);
+      saveCombatCore(pickerIndex);
+      saveMechPrompt(COMBAT_CORES[pickerIndex].prompt);
       overlay.destroy();
+      this.buildUI(w, h);
 
       if (!hasSeenOnboarding()) {
         this.showOnboarding();
