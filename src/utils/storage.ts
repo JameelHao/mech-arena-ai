@@ -235,4 +235,24 @@ export function saveStarterMech(index: number): void {
 export function clearStarterMech(): void {
   localStorage.removeItem(STARTER_MECH_KEY);
   localStorage.removeItem(ONBOARDING_KEY);
+  localStorage.removeItem(COMMANDER_NAME_KEY);
+}
+
+// --- Commander Name ---
+
+const COMMANDER_NAME_KEY = "mechArena_commanderName";
+const DEFAULT_COMMANDER_NAME = "Commander";
+const MAX_COMMANDER_NAME_LENGTH = 20;
+
+export function loadCommanderName(): string {
+  return localStorage.getItem(COMMANDER_NAME_KEY) || DEFAULT_COMMANDER_NAME;
+}
+
+export function saveCommanderName(name: string): void {
+  const trimmed = name.trim().slice(0, MAX_COMMANDER_NAME_LENGTH);
+  localStorage.setItem(COMMANDER_NAME_KEY, trimmed || DEFAULT_COMMANDER_NAME);
+}
+
+export function hasCommanderName(): boolean {
+  return localStorage.getItem(COMMANDER_NAME_KEY) !== null;
 }
