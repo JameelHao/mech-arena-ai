@@ -6,6 +6,7 @@ import Phaser from "phaser";
 import { ASSET_REGISTRY, preloadAllAssets } from "../assets";
 import { MECH_ROSTER, OPPONENT_MECH } from "../data/mechs";
 import { COMBAT_CORES } from "../data/strategies";
+import { TRAINING_SCENARIOS } from "../data/trainingScenarios";
 import { launchHistoryScene } from "../utils/lazyScene";
 import {
   clearStarterMech,
@@ -437,11 +438,7 @@ export class LobbyScene extends Phaser.Scene {
       trainBg.strokeRoundedRect(startX, trainY, btnW, trainH, 6);
     });
     trainZone.on("pointerdown", () => {
-      this.scale.off("resize", this.handleResize, this);
-      this.scene.start("BattleScene", {
-        selectedMech: this.selectedMech(),
-        mode: "training",
-      });
+      this.showScenarioPicker();
     });
 
     // History button
@@ -539,6 +536,115 @@ export class LobbyScene extends Phaser.Scene {
       clearStarterMech();
       this.scene.restart();
     });
+  }
+
+  // --- Scenario Picker ---
+
+  private showScenarioPicker(): void {
+    const { width: w, height: h } = this.scale;
+    const overlay = this.add.container(0, 0);
+
+    const bg = this.add.graphics();
+    bg.fillStyle(0x000000, 0.9);
+    bg.fillRect(0, 0, w, h);
+    overlay.add(bg);
+
+    overlay.add(
+      this.add
+        .text(w / 2, h * 0.06, "SELECT TRAINING SCENARIO", {
+          fontSize: `${Math.max(18, Math.floor(w * 0.03))}px`,
+          color: "#ffa500",
+          fontStyle: "bold",
+        })
+        .setOrigin(0.5),
+    );
+
+    const cardW = Math.min(w * 0.85, 400);
+    const cardH = Math.max(55, h * 0.1);
+    const cardX = (w - cardW) / 2;
+    const startY = h * 0.14;
+    const gap = 8;
+    const fontSize = `${Math.max(12, Math.floor(w * 0.018))}px`;
+    const subFont = `${Math.max(10, Math.floor(w * 0.014))}px`;
+
+    for (let i = 0; i < TRAINING_SCENARIOS.length; i++) {
+      const scenario = TRAINING_SCENARIOS[i];
+      const y = startY + i * (cardH + gap);
+
+      const cardBg = this.add.graphics();
+      cardBg.fillStyle(COLORS.panelBg, 1);
+      cardBg.fillRoundedRect(cardX, y, cardW, cardH, 8);
+      cardBg.lineStyle(1, COLORS.panelBorder);
+      cardBg.strokeRoundedRect(cardX, y, cardW, cardH, 8);
+      overlay.add(cardBg);
+
+      overlay.add(
+        this.add.text(
+          cardX + 15,
+          y + 10,
+          `${scenario.icon}  ${scenario.name}`,
+          {
+            fontSize,
+            color: "#ffa500",
+            fontStyle: "bold",
+          },
+        ),
+      );
+
+      overlay.add(
+        this.add.text(cardX + 15, y + 30, scenario.description, {
+          fontSize: subFont,
+          color: "#888888",
+        }),
+      );
+
+      const zone = this.add
+        .zone(cardX, y, cardW, cardH)
+        .setOrigin(0)
+        .setInteractive({ useHandCursor: true });
+
+      zone.on("pointerover", () => {
+        cardBg.clear();
+        cardBg.fillStyle(COLORS.buttonHover, 1);
+        cardBg.fillRoundedRect(cardX, y, cardW, cardH, 8);
+        cardBg.lineStyle(2, 0xffa500);
+        cardBg.strokeRoundedRect(cardX, y, cardW, cardH, 8);
+      });
+      zone.on("pointerout", () => {
+        cardBg.clear();
+        cardBg.fillStyle(COLORS.panelBg, 1);
+        cardBg.fillRoundedRect(cardX, y, cardW, cardH, 8);
+        cardBg.lineStyle(1, COLORS.panelBorder);
+        cardBg.strokeRoundedRect(cardX, y, cardW, cardH, 8);
+      });
+      zone.on("pointerdown", () => {
+        overlay.destroy();
+        this.scale.off("resize", this.handleResize, this);
+        this.scene.start("BattleScene", {
+          selectedMech: this.selectedMech(),
+          mode: "training",
+          scenario,
+        });
+      });
+      overlay.add(zone);
+    }
+
+    // Cancel button
+    const cancelY = startY + TRAINING_SCENARIOS.length * (cardH + gap) + 10;
+    overlay.add(
+      this.add
+        .text(w / 2, cancelY, "Cancel", {
+          fontSize,
+          color: "#888888",
+        })
+        .setOrigin(0.5),
+    );
+    const cancelZone = this.add
+      .zone(w / 2 - 40, cancelY - 10, 80, 30)
+      .setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+    cancelZone.on("pointerdown", () => overlay.destroy());
+    overlay.add(cancelZone);
   }
 
   // --- Mech Binding ---
