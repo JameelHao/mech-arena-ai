@@ -396,11 +396,56 @@ export class LobbyScene extends Phaser.Scene {
       this.scale.off("resize", this.handleResize, this);
       this.scene.start("BattleScene", {
         selectedMech: this.selectedMech(),
+        mode: "battle",
+      });
+    });
+
+    // Training Chamber button
+    const trainY = startY + btnH + 10;
+    const trainH = 38;
+    const trainBg = this.add.graphics();
+    trainBg.fillStyle(COLORS.buttonBg, 1);
+    trainBg.fillRoundedRect(startX, trainY, btnW, trainH, 6);
+    trainBg.lineStyle(2, 0xffa500);
+    trainBg.strokeRoundedRect(startX, trainY, btnW, trainH, 6);
+
+    this.add
+      .text(w / 2, trainY + trainH / 2, "TRAINING CHAMBER", {
+        fontSize: `${Math.max(12, Math.floor(w * 0.018))}px`,
+        color: "#ffa500",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+
+    const trainZone = this.add
+      .zone(startX, trainY, btnW, trainH)
+      .setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+
+    trainZone.on("pointerover", () => {
+      trainBg.clear();
+      trainBg.fillStyle(COLORS.buttonHover, 1);
+      trainBg.fillRoundedRect(startX, trainY, btnW, trainH, 6);
+      trainBg.lineStyle(2, 0xffcc00);
+      trainBg.strokeRoundedRect(startX, trainY, btnW, trainH, 6);
+    });
+    trainZone.on("pointerout", () => {
+      trainBg.clear();
+      trainBg.fillStyle(COLORS.buttonBg, 1);
+      trainBg.fillRoundedRect(startX, trainY, btnW, trainH, 6);
+      trainBg.lineStyle(2, 0xffa500);
+      trainBg.strokeRoundedRect(startX, trainY, btnW, trainH, 6);
+    });
+    trainZone.on("pointerdown", () => {
+      this.scale.off("resize", this.handleResize, this);
+      this.scene.start("BattleScene", {
+        selectedMech: this.selectedMech(),
+        mode: "training",
       });
     });
 
     // History button
-    const histY = startY + btnH + 12;
+    const histY = trainY + trainH + 10;
     const histH = 36;
     const histBg = this.add.graphics();
     histBg.fillStyle(COLORS.buttonBg, 1);

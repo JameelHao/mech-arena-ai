@@ -122,13 +122,17 @@ export class BattleScene extends Phaser.Scene {
   // Selected player mech (set via init data or default)
   private playerMech: Mech = PLAYER_MECH;
 
+  // Battle mode: "battle" (formal, recorded) or "training" (unrecorded)
+  public mode: "battle" | "training" = "battle";
+
   constructor() {
     super({ key: "BattleScene" });
     console.log("[BattleScene] constructor called");
   }
 
-  init(data?: { selectedMech?: Mech }): void {
+  init(data?: { selectedMech?: Mech; mode?: "battle" | "training" }): void {
     this.playerMech = data?.selectedMech ?? PLAYER_MECH;
+    this.mode = data?.mode ?? "battle";
   }
 
   preload(): void {
@@ -175,6 +179,11 @@ export class BattleScene extends Phaser.Scene {
     const state = this.battleManager.getState();
     for (const msg of state.log) {
       this.addLogMessage(msg);
+    }
+
+    // Show mode indicator
+    if (this.mode === "training") {
+      this.addLogMessage("[TURN]--- Training Mode ---");
     }
 
     // Show strategy status in log
@@ -556,6 +565,7 @@ export class BattleScene extends Phaser.Scene {
       this.promptState.mechPrompt,
       () => this.restartBattle(),
       () => this.cleanupForSceneChange(),
+      this.mode,
     );
   }
 

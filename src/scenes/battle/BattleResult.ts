@@ -158,10 +158,13 @@ export function showResultScreen(
   mechPrompt: string,
   onRestart: () => void,
   onCleanup: () => void,
+  mode: "battle" | "training" = "battle",
 ): Phaser.GameObjects.Container {
   if (won) playVictorySound();
   else playDefeatSound();
-  saveBattleRecord(battleManager, playerMech, mechPrompt, won);
+  if (mode !== "training") {
+    saveBattleRecord(battleManager, playerMech, mechPrompt, won);
+  }
   const state = battleManager.getState();
   const { width: w, height: h } = scene.scale;
 
@@ -179,8 +182,10 @@ export function showResultScreen(
     .setOrigin(0.5);
   resultOverlay.add(icon);
 
-  const titleText = won ? "VICTORY!" : "DEFEAT...";
-  const titleColor = won ? "#00ff88" : "#ff4500";
+  const titleText =
+    mode === "training" ? "TRAINING COMPLETE" : won ? "VICTORY!" : "DEFEAT...";
+  const titleColor =
+    mode === "training" ? "#ffd700" : won ? "#00ff88" : "#ff4500";
   const title = scene.add
     .text(w / 2, h * 0.33, titleText, {
       fontSize: `${Math.max(32, Math.floor(w * 0.06))}px`,
