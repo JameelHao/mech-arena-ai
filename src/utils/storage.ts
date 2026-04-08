@@ -236,6 +236,7 @@ export function clearStarterMech(): void {
   localStorage.removeItem(STARTER_MECH_KEY);
   localStorage.removeItem(ONBOARDING_KEY);
   localStorage.removeItem(COMMANDER_NAME_KEY);
+  localStorage.removeItem(COMBAT_CORE_KEY);
 }
 
 // --- Commander Name ---
@@ -255,4 +256,23 @@ export function saveCommanderName(name: string): void {
 
 export function hasCommanderName(): boolean {
   return localStorage.getItem(COMMANDER_NAME_KEY) !== null;
+}
+
+// --- Combat Core ---
+
+const COMBAT_CORE_KEY = "mechArena_combatCore";
+
+export function saveCombatCore(index: number): void {
+  localStorage.setItem(COMBAT_CORE_KEY, String(index));
+}
+
+export function loadCombatCore(): number {
+  const val = localStorage.getItem(COMBAT_CORE_KEY);
+  if (val === null) return 0;
+  const idx = Number.parseInt(val, 10);
+  return Number.isNaN(idx) ? 0 : idx;
+}
+
+export function hasCombatCore(): boolean {
+  return localStorage.getItem(COMBAT_CORE_KEY) !== null;
 }

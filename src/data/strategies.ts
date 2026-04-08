@@ -1,12 +1,12 @@
-/** Starter strategy templates for new player initialization. */
+/** Combat Core templates — persistent mech behavioral identity. */
 
-export interface StrategyTemplate {
+export interface CombatCore {
   name: string;
   icon: string;
   prompt: string;
 }
 
-export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
+export const COMBAT_CORES: CombatCore[] = [
   {
     name: "Aggressive",
     icon: "\u2694\uFE0F",
@@ -26,3 +26,8 @@ export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       "Prioritize survival. Use Reactive Armor frequently to build up shields. Only attack when HP is above 60%. Prefer resisted attacks over risky super-effective moves.",
   },
 ];
+
+/** @deprecated Use COMBAT_CORES instead */
+export const STRATEGY_TEMPLATES = COMBAT_CORES;
+/** @deprecated Use CombatCore instead */
+export type StrategyTemplate = CombatCore;
