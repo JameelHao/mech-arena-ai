@@ -360,6 +360,7 @@ export function preloadMechAssets(scene: Phaser.Scene): void {
 /**
  * Create a mech sprite using PNG texture (preferred) or procedural fallback.
  * Includes shadow, effects, and idle animation.
+ * @param skinTextureKey Optional texture key override (for skin packs).
  */
 export function createMechSprite(
   scene: Phaser.Scene,
@@ -368,6 +369,7 @@ export function createMechSprite(
   y: number,
   spriteW: number,
   spriteH: number,
+  skinTexture?: string,
 ): MechSprite {
   const container = scene.add.container(x, y);
 
@@ -377,24 +379,20 @@ export function createMechSprite(
   shadow.fillEllipse(0, spriteH * 0.52, spriteW * 0.7, spriteH * 0.1);
   container.add(shadow);
 
-  // 2. Main mech visual - PNG texture or procedural fallback
+  // 2. Main mech visual - skin override, PNG texture, or procedural fallback
   let graphicsObj: Phaser.GameObjects.Image | Phaser.GameObjects.Graphics;
 
+  const textureKey =
+    skinTexture && hasTexture(scene, skinTexture) ? skinTexture : null;
   const entry = ASSET_REGISTRY.mechs[type];
-  if (entry && hasTexture(scene, entry.key)) {
-    try {
-      const image = scene.add.image(0, 0, entry.key);
-      image.setDisplaySize(spriteW, spriteH);
-      graphicsObj = image;
-    } catch (err) {
-      console.warn(
-        `[MechGraphics] PNG texture failed for ${type}, falling back to programmatic:`,
-        err,
-      );
-      const graphics = scene.add.graphics();
-      drawElectricMech(graphics, spriteW, spriteH);
-      graphicsObj = graphics;
-    }
+  if (textureKey) {
+    const image = scene.add.image(0, 0, textureKey);
+    image.setDisplaySize(spriteW, spriteH);
+    graphicsObj = image;
+  } else if (entry && hasTexture(scene, entry.key)) {
+    const image = scene.add.image(0, 0, entry.key);
+    image.setDisplaySize(spriteW, spriteH);
+    graphicsObj = image;
   } else {
     // Programmatic fallback (currently only Electric has no PNG)
     const graphics = scene.add.graphics();

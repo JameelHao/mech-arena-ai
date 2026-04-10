@@ -6,6 +6,7 @@
  */
 
 import type Phaser from "phaser";
+import { getAllSkinAssetEntries } from "../data/skinLoader";
 import { MechType } from "../types/game";
 import type { PortraitState } from "../utils/portraitState";
 
@@ -111,6 +112,19 @@ export function preloadAllAssets(scene: Phaser.Scene): void {
     } catch (err) {
       console.warn(
         `[AssetRegistry] Failed to queue background ${entry.key}:`,
+        err,
+      );
+    }
+  }
+
+  // Skin pack assets
+  for (const entry of getAllSkinAssetEntries()) {
+    if (scene.textures.exists(entry.key)) continue;
+    try {
+      scene.load.image(entry.key, entry.path);
+    } catch (err) {
+      console.warn(
+        `[AssetRegistry] Failed to queue skin asset ${entry.key}:`,
         err,
       );
     }

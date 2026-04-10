@@ -237,6 +237,7 @@ export function clearStarterMech(): void {
   localStorage.removeItem(ONBOARDING_KEY);
   localStorage.removeItem(COMMANDER_NAME_KEY);
   localStorage.removeItem(COMBAT_CORE_KEY);
+  localStorage.removeItem(SKIN_KEY);
 }
 
 // --- Commander Name ---
@@ -256,6 +257,18 @@ export function saveCommanderName(name: string): void {
 
 export function hasCommanderName(): boolean {
   return localStorage.getItem(COMMANDER_NAME_KEY) !== null;
+}
+
+// --- Skin Selection ---
+
+const SKIN_KEY = "mechArena_selectedSkin";
+
+export function saveSkinId(skinId: string): void {
+  localStorage.setItem(SKIN_KEY, skinId);
+}
+
+export function loadSkinId(): string {
+  return localStorage.getItem(SKIN_KEY) ?? "default";
 }
 
 // --- Combat Core ---

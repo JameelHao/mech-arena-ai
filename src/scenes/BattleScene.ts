@@ -6,6 +6,7 @@
 import Phaser from "phaser";
 import { callBattleAPI } from "../api/battleClient";
 import { OPPONENT_MECH, PLAYER_MECH } from "../data/mechs";
+import { skinTextureKey } from "../data/skinLoader";
 import type { TrainingScenario } from "../data/trainingScenarios";
 import { type Mech, TurnPhase } from "../types/game";
 import { BattleManager } from "../utils/BattleManager";
@@ -29,7 +30,7 @@ import {
   resumeSound,
   setMuted,
 } from "../utils/soundManager";
-import { loadMechPrompt, loadSettings } from "../utils/storage";
+import { loadMechPrompt, loadSettings, loadSkinId } from "../utils/storage";
 
 // Battle sub-modules
 import {
@@ -282,6 +283,7 @@ export class BattleScene extends Phaser.Scene {
     const spriteY2 = 450;
     const spriteW2 = Math.min(w * 0.44, 280);
     const spriteH2 = Math.min(h * 0.5, 280);
+    const playerSkinKey = skinTextureKey(loadSkinId(), "mech");
     this.playerMechSprite = createMechSprite(
       this,
       this.playerMech.type,
@@ -289,6 +291,7 @@ export class BattleScene extends Phaser.Scene {
       spriteY2,
       spriteW2,
       spriteH2,
+      playerSkinKey,
     );
 
     const plrResult = createPlayerArea(

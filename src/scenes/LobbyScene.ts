@@ -5,6 +5,8 @@
 import Phaser from "phaser";
 import { ASSET_REGISTRY, preloadAllAssets } from "../assets";
 import { OPPONENT_MECH, STARTER_FRAME } from "../data/mechs";
+import { skinTextureKey } from "../data/skinLoader";
+import { AVAILABLE_SKINS } from "../data/skinRegistry";
 import { COMBAT_CORES } from "../data/strategies";
 import { TRAINING_SCENARIOS } from "../data/trainingScenarios";
 import { launchHistoryScene } from "../utils/lazyScene";
@@ -15,10 +17,12 @@ import {
   hasStarterMech,
   loadCombatCore,
   loadCommanderName,
+  loadSkinId,
   markOnboardingSeen,
   saveCombatCore,
   saveCommanderName,
   saveMechPrompt,
+  saveSkinId,
   saveStarterMech,
 } from "../utils/storage";
 
@@ -98,6 +102,9 @@ export class LobbyScene extends Phaser.Scene {
     // Strategy preview
     this.drawStrategyPreview(w, h);
 
+    // Skin preview
+    this.drawSkinPreview(w, h);
+
     // Buttons
     this.drawButtons(w, h);
   }
@@ -119,14 +126,21 @@ export class LobbyScene extends Phaser.Scene {
     const centerY = panelY + panelH / 2;
     const portraitSize = Math.min(64, panelH * 0.7);
 
-    // Player side
+    // Player side (use selected skin portrait)
     const playerX = panelX + panelW * 0.25;
-    const playerPortrait = ASSET_REGISTRY.portraits[STARTER_FRAME.type];
-    if (playerPortrait) {
-      const key = playerPortrait.normal.key;
-      if (this.textures.exists(key)) {
-        const img = this.add.image(playerX, centerY - 10, key);
-        img.setDisplaySize(portraitSize, portraitSize);
+    const selectedSkinId = loadSkinId();
+    const skinPortraitKey = skinTextureKey(selectedSkinId, "portrait-normal");
+    if (this.textures.exists(skinPortraitKey)) {
+      const img = this.add.image(playerX, centerY - 10, skinPortraitKey);
+      img.setDisplaySize(portraitSize, portraitSize);
+    } else {
+      const playerPortrait = ASSET_REGISTRY.portraits[STARTER_FRAME.type];
+      if (playerPortrait) {
+        const key = playerPortrait.normal.key;
+        if (this.textures.exists(key)) {
+          const img = this.add.image(playerX, centerY - 10, key);
+          img.setDisplaySize(portraitSize, portraitSize);
+        }
       }
     }
     const playerNameY = centerY + portraitSize / 2;
@@ -303,13 +317,48 @@ export class LobbyScene extends Phaser.Scene {
     });
   }
 
+  private drawSkinPreview(w: number, h: number): void {
+    const panelY = h * 0.73;
+    const panelW = w * 0.9;
+    const panelX = (w - panelW) / 2;
+    const panelH = h * 0.05;
+    const fontSize = `${Math.max(10, Math.floor(w * 0.014))}px`;
+
+    const selectedSkinId = loadSkinId();
+    const skin = AVAILABLE_SKINS.find((s) => s.id === selectedSkinId);
+    const skinName = skin ? skin.name : "Standard Issue";
+
+    this.add
+      .text(panelX + 12, panelY + panelH / 2, `Skin: ${skinName}`, {
+        fontSize,
+        color: COLORS.dimText,
+      })
+      .setOrigin(0, 0.5);
+
+    this.add
+      .text(panelX + panelW - 12, panelY + panelH / 2, "Change", {
+        fontSize: `${Math.max(10, Math.floor(w * 0.013))}px`,
+        color: COLORS.accent,
+      })
+      .setOrigin(1, 0.5);
+
+    const skinZone = this.add
+      .zone(panelX, panelY, panelW, panelH)
+      .setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+
+    skinZone.on("pointerdown", () => {
+      this.showSkinPicker();
+    });
+  }
+
   private drawButtons(w: number, h: number): void {
     const btnW = Math.min(w * 0.4, 220);
     const btnH = 48;
 
     // Start Battle button
     const startX = w / 2 - btnW / 2;
-    const startY = h * 0.77;
+    const startY = h * 0.8;
 
     const startBg = this.add.graphics();
     startBg.fillStyle(COLORS.accentHex, 1);
@@ -481,6 +530,168 @@ export class LobbyScene extends Phaser.Scene {
       clearStarterMech();
       this.scene.restart();
     });
+  }
+
+  // --- Skin Picker ---
+
+  private showSkinPicker(): void {
+    const { width: w, height: h } = this.scale;
+    const overlay = this.add.container(0, 0);
+
+    const bg = this.add.graphics();
+    bg.fillStyle(0x000000, 0.9);
+    bg.fillRect(0, 0, w, h);
+    overlay.add(bg);
+
+    overlay.add(
+      this.add
+        .text(w / 2, h * 0.06, "SELECT SKIN", {
+          fontSize: `${Math.max(18, Math.floor(w * 0.03))}px`,
+          color: COLORS.accent,
+          fontStyle: "bold",
+        })
+        .setOrigin(0.5),
+    );
+
+    let pickerIndex = AVAILABLE_SKINS.findIndex((s) => s.id === loadSkinId());
+    if (pickerIndex < 0) pickerIndex = 0;
+
+    const thumbSize = Math.min(Math.floor(w * 0.18), 100);
+    const gap = 12;
+    const totalW =
+      AVAILABLE_SKINS.length * thumbSize + (AVAILABLE_SKINS.length - 1) * gap;
+    const gridX = (w - totalW) / 2;
+    const gridY = h * 0.2;
+    const fontSize = `${Math.max(10, Math.floor(w * 0.014))}px`;
+
+    const drawSkinCards = () => {
+      for (const obj of overlay.list.filter((o) =>
+        (o as Phaser.GameObjects.GameObject).getData("skincard"),
+      )) {
+        obj.destroy();
+      }
+
+      for (let i = 0; i < AVAILABLE_SKINS.length; i++) {
+        const skin = AVAILABLE_SKINS[i];
+        const x = gridX + i * (thumbSize + gap);
+        const y = gridY;
+        const isSelected = i === pickerIndex;
+        const borderColor = Number.parseInt(
+          skin.themeColor.replace("#", ""),
+          16,
+        );
+
+        const cardBg = this.add.graphics();
+        cardBg.setData("skincard", true);
+        cardBg.fillStyle(isSelected ? 0x1a2a3a : COLORS.panelBg, 1);
+        cardBg.fillRoundedRect(x - 4, y - 4, thumbSize + 8, thumbSize + 40, 6);
+        cardBg.lineStyle(
+          isSelected ? 3 : 1,
+          isSelected ? borderColor : COLORS.panelBorder,
+        );
+        cardBg.strokeRoundedRect(
+          x - 4,
+          y - 4,
+          thumbSize + 8,
+          thumbSize + 40,
+          6,
+        );
+        overlay.add(cardBg);
+
+        const thumbKey = skinTextureKey(skin.id, "thumbnail");
+        if (this.textures.exists(thumbKey)) {
+          const img = this.add
+            .image(x + thumbSize / 2, y + thumbSize / 2, thumbKey)
+            .setDisplaySize(thumbSize, thumbSize)
+            .setData("skincard", true);
+          overlay.add(img);
+        }
+
+        overlay.add(
+          this.add
+            .text(x + thumbSize / 2, y + thumbSize + 6, skin.name, {
+              fontSize,
+              color: isSelected ? COLORS.accent : COLORS.text,
+              fontStyle: isSelected ? "bold" : "normal",
+            })
+            .setOrigin(0.5, 0)
+            .setData("skincard", true),
+        );
+
+        const zone = this.add
+          .zone(x - 4, y - 4, thumbSize + 8, thumbSize + 40)
+          .setOrigin(0)
+          .setInteractive({ useHandCursor: true })
+          .setData("skincard", true);
+        zone.on("pointerdown", () => {
+          pickerIndex = i;
+          drawSkinCards();
+        });
+        overlay.add(zone);
+      }
+    };
+
+    drawSkinCards();
+
+    // Confirm button
+    const btnW = Math.min(w * 0.5, 220);
+    const btnH = 44;
+    const btnX = w / 2 - btnW / 2;
+    const btnY = gridY + thumbSize + 70;
+
+    const confirmBg = this.add.graphics();
+    confirmBg.fillStyle(COLORS.accentHex, 1);
+    confirmBg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
+    overlay.add(confirmBg);
+
+    overlay.add(
+      this.add
+        .text(w / 2, btnY + btnH / 2, "Apply Skin", {
+          fontSize: `${Math.max(15, Math.floor(w * 0.023))}px`,
+          color: "#000000",
+          fontStyle: "bold",
+        })
+        .setOrigin(0.5),
+    );
+
+    const confirmZone = this.add
+      .zone(btnX, btnY, btnW, btnH)
+      .setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+
+    confirmZone.on("pointerover", () => {
+      confirmBg.clear();
+      confirmBg.fillStyle(0x00cc66, 1);
+      confirmBg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
+    });
+    confirmZone.on("pointerout", () => {
+      confirmBg.clear();
+      confirmBg.fillStyle(COLORS.accentHex, 1);
+      confirmBg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
+    });
+    confirmZone.on("pointerdown", () => {
+      saveSkinId(AVAILABLE_SKINS[pickerIndex].id);
+      overlay.destroy();
+      this.buildUI(w, h);
+    });
+    overlay.add(confirmZone);
+
+    // Cancel
+    const cancelY = btnY + btnH + 12;
+    overlay.add(
+      this.add
+        .text(w / 2, cancelY, "Cancel", {
+          fontSize: `${Math.max(12, Math.floor(w * 0.018))}px`,
+          color: "#888888",
+        })
+        .setOrigin(0.5),
+    );
+    const cancelZone = this.add
+      .zone(w / 2 - 40, cancelY - 10, 80, 30)
+      .setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+    cancelZone.on("pointerdown", () => overlay.destroy());
+    overlay.add(cancelZone);
   }
 
   // --- Scenario Picker ---
