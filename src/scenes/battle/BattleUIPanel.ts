@@ -4,6 +4,7 @@
 
 import Phaser from "phaser";
 import { ASSET_REGISTRY } from "../../assets";
+import { skinTextureKey } from "../../data/skinLoader";
 import { OPPONENT_MECH } from "../../data/mechs";
 import type { MechType, TurnPhase } from "../../types/game";
 import { TurnPhase as TP } from "../../types/game";
@@ -174,7 +175,18 @@ export function addPortrait(
   x: number,
   y: number,
   size: number,
+  skinId?: string,
 ): Phaser.GameObjects.Image | undefined {
+  // Try skin portrait first
+  if (skinId) {
+    const skinKey = skinTextureKey(skinId, `portrait-${state}`);
+    if (scene.textures.exists(skinKey)) {
+      const img = scene.add.image(x, y, skinKey);
+      img.setDisplaySize(size, size);
+      return img;
+    }
+  }
+  // Fallback to type-based portrait
   const states = PORTRAIT_TEXTURE_KEYS[mechType];
   if (!states) return undefined;
   const entry = states[state];
@@ -195,6 +207,7 @@ export function updatePortraitState(
   opponentPortrait: Phaser.GameObjects.Image | undefined,
   playerPortrait: Phaser.GameObjects.Image | undefined,
   playerMechType: MechType,
+  playerSkinId?: string,
 ): {
   opponentPortraitState: PortraitState;
   playerPortraitState: PortraitState;
@@ -207,6 +220,27 @@ export function updatePortraitState(
     return { opponentPortraitState, playerPortraitState };
   }
 
+  // Try skin portrait for player side
+  if (!isOpponent && playerSkinId) {
+    const skinKey = skinTextureKey(playerSkinId, `portrait-${newState}`);
+    if (scene.textures.exists(skinKey)) {
+      portrait.setTexture(skinKey);
+      scene.tweens.add({
+        targets: portrait,
+        scaleX: portrait.scaleX * 0.9,
+        scaleY: portrait.scaleY * 0.9,
+        duration: 100,
+        yoyo: true,
+        ease: "Power2",
+      });
+      return {
+        opponentPortraitState,
+        playerPortraitState: newState,
+      };
+    }
+  }
+
+  // Fallback to type-based portrait
   const mechType = isOpponent ? OPPONENT_MECH.type : playerMechType;
   const states = PORTRAIT_TEXTURE_KEYS[mechType];
   if (!states) return { opponentPortraitState, playerPortraitState };
@@ -320,6 +354,7 @@ export function createPlayerArea(
   playerMech: { type: MechType; codename?: string; name: string },
   playerPortraitState: PortraitState,
   displayedPlayerRatio: number,
+  skinId?: string,
 ): {
   playerHPBar: Phaser.GameObjects.Graphics;
   playerHPText: Phaser.GameObjects.Text;
@@ -348,6 +383,7 @@ export function createPlayerArea(
       portraitX,
       portraitY,
       portraitSize,
+      skinId,
     );
   }
 
