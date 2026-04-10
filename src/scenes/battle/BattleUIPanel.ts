@@ -4,8 +4,8 @@
 
 import Phaser from "phaser";
 import { ASSET_REGISTRY } from "../../assets";
-import { skinTextureKey } from "../../data/skinLoader";
 import { OPPONENT_MECH } from "../../data/mechs";
+import { skinTextureKey } from "../../data/skinLoader";
 import type { MechType, TurnPhase } from "../../types/game";
 import { TurnPhase as TP } from "../../types/game";
 import {
