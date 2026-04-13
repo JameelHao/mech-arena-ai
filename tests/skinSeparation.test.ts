@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { describe, it, mock, beforeEach, afterEach } from "node:test";
+import { afterEach, beforeEach, describe, it, mock } from "node:test";
 
 // Mock localStorage before importing modules that use it
 if (typeof globalThis.localStorage === "undefined") {
@@ -12,11 +12,11 @@ if (typeof globalThis.localStorage === "undefined") {
   };
 }
 
-import { buildRequestBody } from "../src/api/battleClient";
 import { buildPrompt } from "../api/battle.ts";
+import { buildRequestBody } from "../src/api/battleClient";
 import type { BattleState } from "../src/types/game";
 import { MechType, TurnPhase } from "../src/types/game";
-import type { SkinPackManifest, SkinPack } from "../src/types/skin";
+import type { SkinPack, SkinPackManifest } from "../src/types/skin";
 
 function makeGameState(overrides?: Partial<BattleState>): BattleState {
   return {
@@ -70,9 +70,20 @@ describe("skin separation — SkinPack types are cosmetic only", () => {
     assert.ok(manifest.baseType);
     // Ensure no combat fields are present at runtime
     const keys = Object.keys(manifest);
-    const combatFields = ["hp", "maxHp", "damage", "skills", "defense", "attack", "power"];
+    const combatFields = [
+      "hp",
+      "maxHp",
+      "damage",
+      "skills",
+      "defense",
+      "attack",
+      "power",
+    ];
     for (const field of combatFields) {
-      assert.ok(!keys.includes(field), `SkinPackManifest must not contain combat field: ${field}`);
+      assert.ok(
+        !keys.includes(field),
+        `SkinPackManifest must not contain combat field: ${field}`,
+      );
     }
   });
 
@@ -92,9 +103,20 @@ describe("skin separation — SkinPack types are cosmetic only", () => {
       thumbnail: "/assets/skins/test/thumbnail.png",
     };
     const keys = Object.keys(pack);
-    const combatFields = ["hp", "maxHp", "damage", "skills", "defense", "attack", "power"];
+    const combatFields = [
+      "hp",
+      "maxHp",
+      "damage",
+      "skills",
+      "defense",
+      "attack",
+      "power",
+    ];
     for (const field of combatFields) {
-      assert.ok(!keys.includes(field), `SkinPack must not contain combat field: ${field}`);
+      assert.ok(
+        !keys.includes(field),
+        `SkinPack must not contain combat field: ${field}`,
+      );
     }
   });
 });
@@ -116,11 +138,26 @@ describe("skin separation — buildRequestBody excludes skin data", () => {
     const json = JSON.stringify(body);
     // Skin fields must not appear in the request body
     assert.ok(!json.includes("skinId"), "request body must not contain skinId");
-    assert.ok(!json.includes("skinName"), "request body must not contain skinName");
-    assert.ok(!json.includes("themeColor"), "request body must not contain themeColor");
-    assert.ok(!json.includes("mechSprite"), "request body must not contain mechSprite");
-    assert.ok(!json.includes("thumbnail"), "request body must not contain thumbnail");
-    assert.ok(!json.includes("portrait"), "request body must not contain portrait");
+    assert.ok(
+      !json.includes("skinName"),
+      "request body must not contain skinName",
+    );
+    assert.ok(
+      !json.includes("themeColor"),
+      "request body must not contain themeColor",
+    );
+    assert.ok(
+      !json.includes("mechSprite"),
+      "request body must not contain mechSprite",
+    );
+    assert.ok(
+      !json.includes("thumbnail"),
+      "request body must not contain thumbnail",
+    );
+    assert.ok(
+      !json.includes("portrait"),
+      "request body must not contain portrait",
+    );
   });
 
   it("request body should only contain combat-relevant fields", () => {
@@ -130,7 +167,14 @@ describe("skin separation — buildRequestBody excludes skin data", () => {
     assert.deepEqual(topKeys.sort(), ["gameState", "mechPrompt"]);
     // gameState keys
     const gsKeys = Object.keys(body.gameState);
-    const expected = ["combatCore", "lastMove", "opponentHP", "playerHP", "skills", "statusEffects"];
+    const expected = [
+      "combatCore",
+      "lastMove",
+      "opponentHP",
+      "playerHP",
+      "skills",
+      "statusEffects",
+    ];
     assert.deepEqual(gsKeys.sort(), expected);
   });
 });
@@ -154,12 +198,27 @@ describe("skin separation — buildPrompt excludes skin data", () => {
       },
     });
     // Prompt should not reference skins
-    assert.ok(!prompt.toLowerCase().includes("skin"), "prompt must not mention 'skin'");
-    assert.ok(!prompt.toLowerCase().includes("cosmetic"), "prompt must not mention 'cosmetic'");
-    assert.ok(!prompt.toLowerCase().includes("appearance"), "prompt must not mention 'appearance'");
+    assert.ok(
+      !prompt.toLowerCase().includes("skin"),
+      "prompt must not mention 'skin'",
+    );
+    assert.ok(
+      !prompt.toLowerCase().includes("cosmetic"),
+      "prompt must not mention 'cosmetic'",
+    );
+    assert.ok(
+      !prompt.toLowerCase().includes("appearance"),
+      "prompt must not mention 'appearance'",
+    );
     // Prompt should contain combat data
-    assert.ok(prompt.includes("Aggressive"), "prompt should include combat core name");
-    assert.ok(prompt.includes("Focus fire"), "prompt should include player instructions");
+    assert.ok(
+      prompt.includes("Aggressive"),
+      "prompt should include combat core name",
+    );
+    assert.ok(
+      prompt.includes("Focus fire"),
+      "prompt should include player instructions",
+    );
     assert.ok(prompt.includes("80"), "prompt should include player HP");
   });
 
