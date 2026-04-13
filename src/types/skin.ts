@@ -10,7 +10,13 @@
 
 import type { MechType } from "./game";
 
-/** Manifest metadata for a skin pack (stored in manifest.json). */
+/**
+ * Manifest metadata for a skin pack (stored in manifest.json).
+ *
+ * COSMETIC ONLY — skin packs must never contain combat-related fields
+ * (hp, damage, skills, type effectiveness, etc.). All battle behavior
+ * is driven exclusively by Combat Core and player prompt.
+ */
 export interface SkinPackManifest {
   /** Unique identifier for this skin (kebab-case). */
   id: string;
@@ -24,7 +30,12 @@ export interface SkinPackManifest {
   baseType: MechType;
 }
 
-/** Runtime representation of a loaded skin pack with asset paths. */
+/**
+ * Runtime representation of a loaded skin pack with asset paths.
+ *
+ * COSMETIC ONLY — extends SkinPackManifest with visual asset paths only.
+ * No combat stats, no behavioral modifiers.
+ */
 export interface SkinPack extends SkinPackManifest {
   /** Path to battle sprite (256×256 PNG). */
   mechSprite: string;
