@@ -329,7 +329,7 @@ export class LobbyScene extends Phaser.Scene {
     const skinName = skin ? skin.name : "Standard Issue";
 
     this.add
-      .text(panelX + 12, panelY + panelH / 2, `Skin: ${skinName}`, {
+      .text(panelX + 12, panelY + panelH / 2, `Appearance: ${skinName}`, {
         fontSize,
         color: COLORS.dimText,
       })
@@ -545,7 +545,7 @@ export class LobbyScene extends Phaser.Scene {
 
     overlay.add(
       this.add
-        .text(w / 2, h * 0.06, "SELECT SKIN", {
+        .text(w / 2, h * 0.06, "SELECT APPEARANCE", {
           fontSize: `${Math.max(18, Math.floor(w * 0.03))}px`,
           color: COLORS.accent,
           fontStyle: "bold",
@@ -646,7 +646,7 @@ export class LobbyScene extends Phaser.Scene {
 
     overlay.add(
       this.add
-        .text(w / 2, btnY + btnH / 2, "Apply Skin", {
+        .text(w / 2, btnY + btnH / 2, "Apply Appearance", {
           fontSize: `${Math.max(15, Math.floor(w * 0.023))}px`,
           color: "#000000",
           fontStyle: "bold",

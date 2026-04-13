@@ -107,6 +107,14 @@ export function mockBattleResponse(body: BattleRequest): BattleResponse {
   return { move: 0, reasoning: "[MOCK] Default attack" };
 }
 
+/**
+ * Build the Claude prompt from combat-only inputs.
+ *
+ * Inputs: combatCore.prompt (behavioral personality), mechPrompt (player
+ * free-text strategy), and gameState (HP, skills, status effects).
+ * Skin/cosmetic data is intentionally excluded — skins do not influence
+ * AI decision-making.
+ */
 export function buildPrompt(body: BattleRequest): string {
   const { mechPrompt, gameState } = body;
 

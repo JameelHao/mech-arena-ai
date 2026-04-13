@@ -23,7 +23,14 @@ interface BattleAPIResponse {
 
 const MAX_RETRIES = 2;
 
-function buildRequestBody(
+/**
+ * Build the request body for the battle API.
+ *
+ * IMPORTANT: Only combat-relevant data (HP, skills, combatCore, mechPrompt)
+ * is included. Skin/cosmetic data (skinId, skin name, etc.) must NEVER be
+ * sent to the API — skins are purely visual and do not affect battle behavior.
+ */
+export function buildRequestBody(
   prompt: string,
   state: BattleState,
 ): BattleAPIRequest {
