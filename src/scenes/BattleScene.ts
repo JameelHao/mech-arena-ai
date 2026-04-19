@@ -301,6 +301,7 @@ export class BattleScene extends Phaser.Scene {
       this.playerMech,
       this.playerPortraitState,
       this.displayedPlayerRatio,
+      loadSkinId(),
     );
     this.playerHPBar = plrResult.playerHPBar;
     this.playerHPText = plrResult.playerHPText;
@@ -386,6 +387,7 @@ export class BattleScene extends Phaser.Scene {
           this.opponentPortrait,
           this.playerPortrait,
           this.playerMech.type,
+          loadSkinId(),
         );
         this.opponentPortraitState = result.opponentPortraitState;
         this.playerPortraitState = result.playerPortraitState;
